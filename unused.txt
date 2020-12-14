@@ -1,0 +1,134 @@
+ListView(
+  cacheExtent: 9999999,
+  children: <Widget>[
+    Padding(
+      padding: const EdgeInsets.only(top: 10, left: 10, right: 10, bottom: 0),
+      child: Row(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: 10, left: 5),
+            child: Column(
+              children: [
+                Tooltip(
+                  message: 'Create Story',
+                  child: InkWell(
+                    onTap: () => RivalProvider.navigate(context, CreateStory()),
+                    child: Container(
+                      height: 30,
+                      width: 30,
+                      child: Icon(Icons.add, color: Colors.white,),
+                      decoration: BoxDecoration(
+                        color: Colors.indigoAccent,
+                        borderRadius: BorderRadius.all(Radius.circular(30))
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (CurrentUser().stories != null && CurrentUser().stories.length > 0) Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: Column(
+              children: [
+                InkWell(
+                  onTap: () => Navigator.of(context).push(RivalNavigator(transitionType: SharedAxisTransitionType.vertical, page: ViewStory(isCurrentUser: true, isFromHomeScreen: true,))),
+                  child: Container(
+                    height: 60,
+                    width: 60,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.all(Radius.circular(20))
+                    ),
+                    child: Hero(
+                      tag: 'story-${CurrentUser().uid}',
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.all(Radius.circular(20)),
+                        child: Image(image: CurrentUser().photo, fit: BoxFit.cover,),
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 5),
+                  child: Text('@${CurrentUser().username}', style: TextStyle(fontFamily: RivalFonts.feature)),
+                )
+              ],
+            ),
+          ),
+          Expanded(
+            child: FutureBuilder<List<User>>(
+              future: RivalProvider().getStories(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.done) {
+                  List<User> users = snapshot.data;
+                  return Row(
+                    children: List.generate(
+                      users.length,
+                      (index) => Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: Column(
+                          children: [
+                            InkWell(
+                              onTap: () => Navigator.of(context).push(RivalNavigator(transitionType: SharedAxisTransitionType.vertical, page: ViewStory(isCurrentUser: false, user: users[index], isFromHomeScreen: true,))),
+                              child: Container(
+                                height: 60,
+                                width: 60,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.all(Radius.circular(20))
+                                ),
+                                child: Hero(
+                                  tag: 'story-${users[index].uid}',
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.all(Radius.circular(20)),
+                                    child: Image(image: users[index].photo, fit: BoxFit.cover,),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 5),
+                              child: Text('@${users[index].username}', style: TextStyle(fontFamily: RivalFonts.feature, fontWeight: users[index].storyViewed ? FontWeight.normal : FontWeight.bold)),
+                            )
+                          ],
+                        ),
+                      )
+                    ),
+                  );
+                } else {
+                  return Row(
+                    children: List.generate(
+                      3,
+                      (index) => Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: Column(
+                          children: [
+                            Shimmer.fromColors(
+                              child: Container(
+                                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.all(Radius.circular(20))),
+                                height: 60,
+                                width: 60
+                              ),
+                              baseColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black12 : Colors.white10,
+                              highlightColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black12 : Colors.white12
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 5),
+                              child: Shimmer.fromColors(child: Container(decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.all(Radius.circular(3))), height: 10, width: 60), baseColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black12 : Colors.white10, highlightColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black26 : Colors.white12),
+                            )
+                          ],
+                        ),
+                      )
+                    ),
+                  );
+                }
+              },
+            ),
+          )
+        ],
+      ),
+    ),
+  ] + List.generate(
+    homeScreenPosts.length,
+    (index) => PostCard(doc: homeScreenPosts[index])
+  ),
+)

@@ -1,0 +1,57 @@
+              Column(
+                children: [
+                  GridView.count(
+                    shrinkWrap: true,
+                    physics: ScrollPhysics(),
+                    crossAxisCount: 3,
+                    padding: EdgeInsets.all(5),
+                    children: List.generate(me.posts.length, (index) {
+                      return Padding(
+                        padding: const EdgeInsets.all(1),
+                        child: FutureBuilder(
+                          future: me.posts[index].get(),
+                          builder: (context, snapshot) {
+                            if(snapshot.connectionState == ConnectionState.done) {
+                              Post post = Post(doc: snapshot.data);
+                              return InkWell(
+                                onTap: () => Navigator.of(context).push(RivalNavigator(page: SinglePostView(post: post,))),
+                                child: Stack(
+                                  children: [
+                                    Container(
+                                      height: double.infinity,
+                                      child: OctoImage(
+                                        image: NetworkImage(post.images[0]),
+                                        fit: BoxFit.cover,
+                                        progressIndicatorBuilder: (context, progress) {
+                                          return Center(
+                                            child: Container(
+                                              width: MediaQuery.of(context).size.width * 0.1,
+                                              height: MediaQuery.of(context).size.width * 0.1,
+                                              child: CircularProgressIndicator(strokeWidth: 2),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                    if(post.images.length > 1) Align(alignment: Alignment.bottomRight, child: Icon(Icons.view_module),)
+                                  ]
+                                ),
+                              );
+                            }
+                            return Container(
+                              color: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black12 : Colors.white12,
+                              child: Center(
+                                child: Container(
+                                  width: MediaQuery.of(context).size.width * 0.15,
+                                  height: MediaQuery.of(context).size.width * 0.15,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    }),
+                  ),
+                ],
+              )

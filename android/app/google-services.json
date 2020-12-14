@@ -1,0 +1,135 @@
+{
+  "project_info": {
+    "project_number": "762035372879",
+    "firebase_url": "https://gillco-projecte.firebaseio.com",
+    "project_id": "gillco-projecte",
+    "storage_bucket": "gillco-projecte.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:762035372879:android:1d42f7e98f4f8480933b3a",
+        "android_client_info": {
+          "package_name": "gillco.rival"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "762035372879-9t9as711aubnfiq0sm5vkfof90n2n1p2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBlZY0sCjz_eC_qMn1H9kwIy42oiB6ZStI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "762035372879-9t9as711aubnfiq0sm5vkfof90n2n1p2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:762035372879:android:4bfafe500febf5dd933b3a",
+        "android_client_info": {
+          "package_name": "photography.rival"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "762035372879-nj0qtu5t2r6a38sttrio225n7g03b01a.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "photography.rival",
+            "certificate_hash": "06cc636b2711b64108b19f33974563e13d683cc1"
+          }
+        },
+        {
+          "client_id": "762035372879-9t9as711aubnfiq0sm5vkfof90n2n1p2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBlZY0sCjz_eC_qMn1H9kwIy42oiB6ZStI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "762035372879-9t9as711aubnfiq0sm5vkfof90n2n1p2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:762035372879:android:e09f2126d744c80a933b3a",
+        "android_client_info": {
+          "package_name": "photography.rival.messages"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "762035372879-9t9as711aubnfiq0sm5vkfof90n2n1p2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBlZY0sCjz_eC_qMn1H9kwIy42oiB6ZStI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "762035372879-9t9as711aubnfiq0sm5vkfof90n2n1p2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:762035372879:android:7001d9d8246ad398933b3a",
+        "android_client_info": {
+          "package_name": "project.e"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "762035372879-9t9as711aubnfiq0sm5vkfof90n2n1p2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBlZY0sCjz_eC_qMn1H9kwIy42oiB6ZStI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "762035372879-9t9as711aubnfiq0sm5vkfof90n2n1p2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

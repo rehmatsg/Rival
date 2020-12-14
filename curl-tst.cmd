@@ -1,0 +1,1 @@
+curl -H "Content-Type: application/json" -X POST https://firebasedynamiclinks.googleapis.com/v1/shortLinks?key=AIzaSyBlZY0sCjz_eC_qMn1H9kwIy42oiB6ZStI -d "{ \"dynamicLinkInfo\": { \"domainUriPrefix\": \"https://rival.page.link\", \"link\": \"https://rival.photography/profile/@rehmat\", \"androidInfo\": {\"androidPackageName\": \"photography.rival\"}}}"
