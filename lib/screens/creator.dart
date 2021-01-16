@@ -1,4 +1,5 @@
 import 'package:e/app.dart';
+import 'package:e/screens/sponsor.dart';
 import 'package:flutter/material.dart';
 
 class Creator extends StatefulWidget {
@@ -12,6 +13,12 @@ class _CreatorState extends State<Creator> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Creator'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.help),
+            onPressed: () => Navigator.of(context).push(RivalNavigator(page: CreatorIntro()))
+          )
+        ],
       ),
       body: ListView(
         children: [
@@ -23,7 +30,12 @@ class _CreatorState extends State<Creator> {
             title: Text('Insights'),
             subtitle: Text('View detailed insights of your account'),
             onTap: () => Navigator.of(context).push(RivalNavigator(page: AccountInsights())),
-          )
+          ),
+          ListTile(
+            title: Text('Sponsors'),
+            subtitle: Text('View and manage sponsors'),
+            onTap: () => Navigator.of(context).push(RivalNavigator(page: ManageSponsor())),
+          ),
         ],
       ),
     );

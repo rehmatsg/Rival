@@ -72,33 +72,6 @@ class _EditStoryState extends State<EditStory> {
             else if (story.type == StoryType.post) Text('Post', style: TextStyle(fontFamily: RivalFonts.rival))
           ],
         ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.delete),
-            tooltip: 'Delete Story',
-            onPressed: () => showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: Text('Delete Story?'),
-                content: Text('This action cannot be undone. Are you sure you want to delete?'),
-                actions: [
-                  FlatButton(
-                    child: Text('Delete'),
-                    onPressed: () async {
-                      RivalProvider.vibrate();
-                      await story.delete();
-                      Navigator.of(context).pushAndRemoveUntil(RivalNavigator(page: Home()), (route) => false);
-                    },
-                  ),
-                  FlatButton(
-                    child: Text('Cancel'),
-                    onPressed: () => Navigator.of(context).pop(),
-                  )
-                ],
-              ),
-            )
-          )
-        ],
       ),
       body: ListView(
         children: [
@@ -174,15 +147,8 @@ class _EditStoryState extends State<EditStory> {
               );
             },
           ),
+          Container(height: 5,),
           Divider(),
-          Row(
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 20, left: 15, right: 15, bottom: 5),
-                child: Text('Insigths', style: TextStyle(fontSize: Theme.of(context).textTheme.headline3.fontSize, fontFamily: RivalFonts.feature),),
-              ),
-            ],
-          ),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 5),
             child: Card(
@@ -220,86 +186,141 @@ class _EditStoryState extends State<EditStory> {
               ),
             ),
           ),
-          Divider(),
-          if (story.type == StoryType.image || story.type == StoryType.video) ... [
-            Row(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 20, left: 15, right: 15, bottom: 10),
-                  child: Text('Edit', style: TextStyle(fontSize: Theme.of(context).textTheme.headline3.fontSize, fontFamily: RivalFonts.feature),),
-                ),
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15),
-              child: TextFormField(
-                controller: captionController,
-                decoration: InputDecoration(
-                  filled: true,
-                  labelText: 'Caption',
-                  floatingLabelBehavior: FloatingLabelBehavior.always
-                ),
-                minLines: 3,
-                maxLines: 5,
-              ),
-            ),
-            Row(
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 15),
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-                  child: OutlineButton(
-                    onPressed: () async {
-                      await RivalProvider.vibrate();
-                      await story.updateCaption(captionController.text);
-                      await me.reload();
-                      await RivalProvider.showToast(text: 'Saved Changes');
-                      Navigator.of(context).pushAndRemoveUntil(RivalNavigator(page: Home()), (route) => false);
-                    },
-                    child: Text('Save'),
-                  ),
+                OutlineButton.icon(
+                  label: Text('Delete'),
+                  icon: Icon(Icons.delete),
+                  splashColor: Colors.red.withOpacity(0.2),
+                  onPressed: () => showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: Text('Delete Story?'),
+                      content: Text('This action cannot be undone. Are you sure you want to delete?'),
+                      actions: [
+                        FlatButton(
+                          child: Text('Delete'),
+                          onPressed: () async {
+                            RivalProvider.vibrate();
+                            await Loader.show(
+                              context,
+                              function: () async {
+                                await story.delete();
+                              },
+                              onComplete: () {}
+                            );
+                            Navigator.of(context).pushAndRemoveUntil(RivalNavigator(page: Home()), (route) => false);
+                          },
+                        ),
+                        FlatButton(
+                          child: Text('Cancel'),
+                          onPressed: () => Navigator.of(context).pop(),
+                        )
+                      ],
+                    ),
+                  )
                 )
               ],
-            )
-          ] else if (story.type == StoryType.text) ... [
-            Row(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 20, left: 15, right: 15, bottom: 10),
-                  child: Text('Edit', style: TextStyle(fontSize: Theme.of(context).textTheme.headline3.fontSize, fontFamily: RivalFonts.feature),),
-                ),
-              ],
             ),
-            ListTile(
-              contentPadding: EdgeInsets.only(bottom: 5, left: 10, right: 10, top: 5),
-              leading: ClipOval(child: Container(color: currentColor, width: 40, height: 40,)),
-              title: Text('Tap to select background color', style: TextStyle(color: MediaQuery.of(context).platformBrightness == Brightness.dark ? Colors.white70 : Colors.black),),
-              onTap: _showColorPicker,
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-                  child: OutlineButton(
-                    onPressed: () async {
-                      await RivalProvider.vibrate();
-                      await story.updateColor(currentColor);
-                      await me.reload();
-                      await RivalProvider.showToast(text: 'Saved Changes');
-                      Navigator.of(context).pushAndRemoveUntil(RivalNavigator(page: Home()), (route) => false);
-                    },
-                    child: Text('Save'),
-                  ),
-                )
-              ],
-            )
-          ]
+          )
+          // Divider(),
+          // if (story.type == StoryType.image || story.type == StoryType.video) ... [
+          //   Row(
+          //     children: [
+          //       Padding(
+          //         padding: const EdgeInsets.only(top: 20, left: 15, right: 15, bottom: 10),
+          //         child: Text('Edit', style: TextStyle(fontSize: Theme.of(context).textTheme.headline3.fontSize, fontFamily: RivalFonts.feature),),
+          //       ),
+          //     ],
+          //   ),
+          //   Padding(
+          //     padding: const EdgeInsets.symmetric(horizontal: 15),
+          //     child: TextFormField(
+          //       controller: captionController,
+          //       decoration: InputDecoration(
+          //         filled: true,
+          //         labelText: 'Caption',
+          //         floatingLabelBehavior: FloatingLabelBehavior.always
+          //       ),
+          //       minLines: 3,
+          //       maxLines: 5,
+          //     ),
+          //   ),
+          //   Row(
+          //     mainAxisAlignment: MainAxisAlignment.end,
+          //     children: [
+          //       Padding(
+          //         padding: EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+          //         child: OutlineButton(
+          //           onPressed: () async {
+          //             RivalProvider.vibrate();
+          //             Loader.show(
+          //               context,
+          //               function: () async {
+          //                 await story.updateCaption(captionController.text);
+          //                 await me.reload();
+          //                 await RivalProvider.showToast(text: 'Saved Changes');
+          //               },
+          //               onComplete: () {
+          //                 Navigator.of(context).pushAndRemoveUntil(RivalNavigator(page: Home()), (route) => false);
+          //               }
+          //             );
+          //           },
+          //           child: Text('Save'),
+          //         ),
+          //       )
+          //     ],
+          //   )
+          // ] else if (story.type == StoryType.text) ... [
+          //   Row(
+          //     children: [
+          //       Padding(
+          //         padding: const EdgeInsets.only(top: 20, left: 15, right: 15, bottom: 10),
+          //         child: Text('Edit', style: TextStyle(fontSize: Theme.of(context).textTheme.headline3.fontSize, fontFamily: RivalFonts.feature),),
+          //       ),
+          //     ],
+          //   ),
+          //   ListTile(
+          //     contentPadding: EdgeInsets.only(bottom: 5, left: 10, right: 10, top: 5),
+          //     leading: ClipOval(child: Container(color: currentColor, width: 40, height: 40,)),
+          //     title: Text('Tap to select background color', style: TextStyle(color: MediaQuery.of(context).platformBrightness == Brightness.dark ? Colors.white70 : Colors.black),),
+          //     onTap: _showColorPicker,
+          //   ),
+          //   Row(
+          //     mainAxisAlignment: MainAxisAlignment.end,
+          //     children: [
+          //       Padding(
+          //         padding: EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+          //         child: OutlineButton(
+          //           onPressed: () async {
+          //             RivalProvider.vibrate();
+          //             Loader.show(
+          //               context,
+          //               function: () async {
+          //                 await story.updateColor(currentColor);
+          //                 await me.reload();
+          //               },
+          //               onComplete: () {
+          //                 RivalProvider.showToast(text: 'Saved Changes');
+          //                 Navigator.of(context).pushAndRemoveUntil(RivalNavigator(page: Home()), (route) => false);
+          //               }
+          //             );
+          //           },
+          //           child: Text('Save'),
+          //         ),
+          //       )
+          //     ],
+          //   )
+          // ]
         ],
       ),
     );
   }
 
+  // ignore: unused_element
   _showColorPicker() {
     showDialog(
       context: context,

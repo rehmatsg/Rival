@@ -5,27 +5,22 @@ import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
+import 'package:e/app.dart';
 import 'package:eyro_toast/eyro_toast.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:image_cropper/image_cropper.dart';
-import 'package:octo_image/octo_image.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:shimmer/shimmer.dart';
-import 'package:step_progress_indicator/step_progress_indicator.dart';
 import 'package:supercharged/supercharged.dart';
 import 'package:vibration/vibration.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 import 'post/post.dart';
-import 'screens/explore.dart';
-import 'story/view.dart';
 import 'users.dart';
-import 'widgets/widgets.dart';
 
 export 'users.dart';
 export 'theme.dart';
@@ -47,11 +42,12 @@ final List<String> months = [
 ];
 
 class RivalRegex {
-  static String username = r'@[a-z0-9_.]{4,16}|\B#+([\w]+)\b';
+  static String username = r'@[a-z0-9_.]{4,16}';
   static String tag = r'\B#+([\w]+)\b';
   static String email = r'^([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,5})';
   static String url = r'https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)';
   static String phone = r'[\d]{3}[ ]{1}[\d]{3}';
+  static String specialChars = r'\W+';
 }
 
 FirebaseFirestore firestore;
@@ -67,6 +63,12 @@ Map<String, int> topTags;
 Me me;
 
 class RivalProvider {
+
+  static int get weekOfYear {
+    DateTime date = DateTime.now();
+    int dayOfYear = int.parse(DateFormat("D").format(date));
+    return ((dayOfYear - date.weekday + 10) / 7).floor();
+  }
 
   static Future<List<DocumentSnapshot>> getPosts(int page) async {
     if (homeScreenPosts == null) {
@@ -191,239 +193,6 @@ class RivalProvider {
 
 }
 
-class UserListTile extends StatefulWidget {
-
-  UserListTile({Key key, this.user, this.doc, this.id, this.ref, this.isCurrentUser, this.subtitle}) : super(key: key);
-  final RivalUser user;
-  /// UID of [RivalUser]. Initializing this class using UID automatically gets user by UID.
-  final String id;
-  final DocumentSnapshot doc;
-  final DocumentReference ref;
-  final bool isCurrentUser;
-  final String subtitle;
-
-  @override
-  _UserListTileState createState() => _UserListTileState();
-}
-
-class _UserListTileState extends State<UserListTile> {
-
-  RivalUser user;
-  String id;
-  DocumentSnapshot doc;
-  
-  bool isCurrentUser = false;
-  bool isLoading = true;
-
-  _init() async {
-    if (widget.user != null) {
-      user = widget.user;
-      id = user.uid;
-      doc = user.doc;
-      isLoading = false;
-    } else if (widget.id != null) {
-      user = await getUser(widget.id);
-      id = widget.id;
-      doc = user.doc;
-      isLoading = false;
-    } else if (widget.doc != null) {
-      doc = widget.doc;
-      user = RivalUser(doc: doc);
-      id = doc.id;
-      isLoading = false;
-    } else if (widget.ref != null) {
-      await _getUserFromRef();
-    }
-
-    if (widget.isCurrentUser != null) {
-      isCurrentUser = widget.isCurrentUser;
-    } else if (user.uid == me.uid) {
-      isCurrentUser = true;
-    } else {
-      isCurrentUser = false;
-    }
-    setState(() {});
-  }
-
-  @override
-  void initState() {
-    _init();
-    super.initState();
-  }
-
-  Future<void> _getUserFromRef() async {
-    doc = await widget.ref.get();
-    id = doc.id;
-    user = RivalUser(doc: doc);
-    setState(() {
-      isLoading = false;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Visibility(
-      visible: (isLoading || isCurrentUser) ? true : (user.amIBlocked ? false : true),
-      child: ListTile(
-        visualDensity: VisualDensity.compact,
-        leading: isCurrentUser
-        ? ((me.stories != null && me.stories.length > 0)
-          ? GestureDetector(
-            onTap: () async {
-              await RivalProvider.vibrate();
-              Navigator.of(context).push(RivalNavigator(page: ViewStory(launchedFromHomeScreen: false, users: [me])));
-            },
-            child: CircularStepProgressIndicator(
-              totalSteps: me.stories.length,
-              unselectedColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black38 : Colors.white38,
-              width: 40,
-              height: 40,
-              padding: me.stories.length > 1 ? (22/7) / 15 : 0,
-              customStepSize: (intn, boo) => 2,
-              child: Padding(
-                padding: const EdgeInsets.all(2.0),
-                child: ClipOval(
-                  child: ProfilePhoto(width: 30, height: 30,),
-                ),
-              ),
-            ),
-          )
-          : ClipOval(
-            child: ProfilePhoto(width: 40, height: 40,),
-          )
-        )
-        : (
-          isLoading
-          ? Shimmer.fromColors(child: Container(decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.all(Radius.circular(100))), height: 40, width: 40), baseColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black12 : Colors.white10, highlightColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black12 : Colors.white12)
-          : ((user.stories != null && user.stories.length > 0)
-            ? GestureDetector(
-              onTap: () async {
-                await RivalProvider.vibrate();
-                Navigator.of(context).push(RivalNavigator(page: ViewStory(launchedFromHomeScreen: false, users: [user],)));
-              },
-              child: CircularStepProgressIndicator(
-                totalSteps: user.stories.length,
-                unselectedColor: (user.storyViewed || user.uid == me.user.uid) ? (MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black38 : Colors.white38) : Colors.indigoAccent,
-                width: 40,
-                height: 40,
-                padding: user.stories.length > 1 ? (22/7) / 15 : 0,
-                customStepSize: (intn, boo) => 2,
-                child: Padding(
-                  padding: const EdgeInsets.all(2.0),
-                  child: ClipOval(
-                    child: OctoImage(
-                      image: user.photo,
-                      placeholderBuilder: (context) => CircularProgressIndicator()
-                    ),
-                  ),
-                ),
-              ),
-            )
-            : ClipOval(
-              child: OctoImage(
-                image: user.photo,
-                placeholderBuilder: (context) => CircularProgressIndicator(),
-                width: 40,
-                height: 40,
-              ),
-            )
-          )),
-        title: isCurrentUser
-          ? Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (widget.subtitle != null) Text(me.username)
-              else Flexible(
-                flex: 1,
-                child: Text(me.displayName, overflow: TextOverflow.ellipsis,)
-              ),
-              if (me.isVerified) ... [
-                Container(width: 10,),
-                VerifiedBadge()
-              ]
-            ],
-          )
-          : (isLoading
-          ? Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                height: 11,
-                width: MediaQuery.of(context).size.width / 2,
-                child: Shimmer.fromColors(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.all(Radius.circular(2))
-                    ),
-                    width: MediaQuery.of(context).size.width * 0.8,
-                  ),
-                  baseColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black12 : Colors.white10,
-                  highlightColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black26 : Colors.white12
-                ),
-              ),
-            ],
-          )
-          : Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(widget.subtitle != null ? user.username : user.displayName),
-              if (user.isVerified) ... [
-                Container(width: 10,),
-                VerifiedBadge()
-              ]
-            ],
-          )),
-        subtitle: isCurrentUser ? Text(widget.subtitle != null ? widget.subtitle : me.username) : (isLoading ? Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              height: 11,
-              width: MediaQuery.of(context).size.width / 3,
-              child: Shimmer.fromColors(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.all(Radius.circular(2))
-                  ),
-                  width: MediaQuery.of(context).size.width * 0.8,
-                ),
-                baseColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black12 : Colors.white10,
-                highlightColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black26 : Colors.white10
-              ),
-            ),
-          ],
-        ) : Text(widget.subtitle != null ? widget.subtitle : user.username)),
-        trailing: (isLoading || isCurrentUser) ? null : FlatButton(
-          onPressed: () async {
-            await RivalProvider.vibrate();
-            user.followUnfollowRequest();
-          },
-          child: StreamBuilder<DocumentSnapshot>(
-            stream: user.reference.snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.active) {
-                user = RivalUser(doc: snapshot.data);
-                return Text(user.followUnfollow, style: TextStyle(color: Colors.indigoAccent, fontWeight: FontWeight.bold),);
-              }
-              return Text(user.followUnfollow, style: TextStyle(color: Colors.indigoAccent, fontWeight: FontWeight.bold),);
-            },
-          ),
-          splashColor: Colors.indigoAccent.withOpacity(0.2),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(10))
-          ),
-        ),
-        onTap: () {
-          if (!isLoading) {
-            user.navigateToProfile(context);
-          }
-        },
-      ),
-    );
-  }
-}
-
 
 // -----------------------------------------------Functions---------------------------------------------------
 
@@ -435,6 +204,7 @@ Map<String, dynamic> rivalDefaults = {
   'allow_edit_post': true,
   'allow_new_story': true,
   'allow_name_change': true,
+  'show_google_ads': true
 };
 Future<void> initRemoteConfig() async {
   remoteConfig = await RemoteConfig.instance;
@@ -452,6 +222,7 @@ class RivalRemoteConfig {
   static bool get allowEditPost => remoteConfig.getBool('allow_edit_post');
   static bool get allowNewStory => remoteConfig.getBool('allow_new_story');
   static bool get allowNameChange => remoteConfig.getBool('allow_name_change');
+  static bool get showGoogleAds => remoteConfig.getBool('show_google_ads');
 }
 
 List<Post> topPosts;
@@ -554,8 +325,11 @@ Future<List<Post>> getAds({int limit = 10}) async {
 
 Future<String> createDynamicURL({
   String uriPrefix = 'https://rival.page.link',
+  /// Provide a link to which the server should navigate if app is not installed
   String link,
+  /// Title of the web page
   String title,
+  /// Description of the web page
   String description
 }) async {
   try {
@@ -588,7 +362,7 @@ Future<String> createDynamicURL({
 
 Future<Map<String, int>> getTopTags() async {
   if (topTags != null) return topTags;
-  Map tagsOfWeek = (await firestore.collection('rival').doc('tags').get()).data()[weekOfYear().toString()] ?? {};
+  Map tagsOfWeek = (await firestore.collection('rival').doc('tags').get()).data()[RivalProvider.weekOfYear.toString()] ?? {};
   List sortedKeys = tagsOfWeek.keys.toList(growable:false)..sort((k1, k2) => tagsOfWeek[k1].compareTo(tagsOfWeek[k2]));
   LinkedHashMap sortedMap = new LinkedHashMap.fromIterable(sortedKeys, key: (k) => k, value: (k) => tagsOfWeek[k]);
   topTags = {};
@@ -603,7 +377,7 @@ Future<Map<String, int>> getTopTags() async {
 
 Future<Map<String, int>> getTopTags2() async {
   if (topTags != null) return topTags;
-  List tagsOfWeek = (await firestore.collection('rival').doc('tags').get()).data()[weekOfYear().toString()] ?? [];
+  List tagsOfWeek = (await firestore.collection('rival').doc('tags').get()).data()[RivalProvider.weekOfYear.toString()] ?? [];
   List list = tagsOfWeek.map((e) => e).toList();
   Map topTagsL = {};
   var maxOccurrence = 0;
@@ -639,6 +413,10 @@ Future<Map<String, int>> getTopTags2() async {
   return topTags;
 }
 
+String getFormattedDate(DateTime date, {bool includeHour = false}) {
+  return "${date.day} ${months[date.month]}${date.year != DateTime.now().year ? ' ' + date.year.toString() : ''}" + (includeHour ? (" at ${date.hour}.${date.minute}") : "");
+}
+
 String getTimeAgo(DateTime date, {bool includeHour = false}) {
   String timeAgo = timeago.format(date);
 
@@ -646,7 +424,7 @@ String getTimeAgo(DateTime date, {bool includeHour = false}) {
 
   if (new DateTime.now().subtract(Duration(days: 30)).millisecondsSinceEpoch > timestamp) {
     // More than a month ago
-    timeAgo = "${date.day} ${months[date.month]}${date.year != DateTime.now().year ? ' ' + date.year.toString() : ''}" + (includeHour ? (" at ${date.hour}.${date.minute}") : "");
+    timeAgo = getFormattedDate(date, includeHour: includeHour);
   }
 
   return timeAgo;
@@ -709,5 +487,20 @@ extension RivalListsExtension<T> on List<T> {
     int lth = this.length;
     int random = Random().nextInt(lth);
     return this[random];
+  }
+}
+
+extension RivalMapExtension<T, V> on Map<T, V> {
+  Map<T, V> getRange(int start, int end) {
+    Map<T, V> updated = new Map<T, V>.from(this);
+    updated.removeWhere((key, value) {
+      int index = this.keys.toList().indexOf(key);
+      if (index < start || index >= end) {
+        return true;
+      } else {
+        return false;
+      }
+    });
+    return updated;
   }
 }

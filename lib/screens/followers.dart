@@ -1,4 +1,4 @@
-import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../app.dart';
 
@@ -11,8 +11,18 @@ class Followers extends StatefulWidget {
 
 class _FollowersState extends State<Followers> {
 
+  RivalRootUser user;
+
+  Map<String, Future<RivalUser>> followers = {};
+
   @override
   void initState() {
+    user = widget.user;
+    user.followers.forEach((f) {
+      DocumentReference ref = f;
+      String uid = ref.id;
+      followers[uid] = getUser(uid);
+    });
     super.initState();
   }
 
@@ -27,43 +37,39 @@ class _FollowersState extends State<Followers> {
       appBar: AppBar(
         title: Text('@${widget.user.username}'),
       ),
-      body: StreamProvider<RivalRootUser>.value(
-        value: widget.user.stream,
-        lazy: false,
-        initialData: widget.user,
-        updateShouldNotify: (previous, current) {
-          if (previous.followers.length < current.followers.length) {
-            return true;
-          } else {
-            return false;
-          }
-        },
-        builder: (context, child) {
-          RivalRootUser user = Provider.of<RivalRootUser>(context);
-          return SingleChildScrollView(
-            child: Column(
-              children: <Widget>[
-                Row(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 20, left: 15, right: 15, bottom: 5),
-                      child: Text('Followers', style: TextStyle(fontSize: Theme.of(context).textTheme.headline3.fontSize, fontFamily: RivalFonts.feature),),
-                    ),
-                  ],
-                ),
-                if (widget.user.uid == me.uid && (me.data['allow_new_followers'] == false || me.data['follow_requests'].isNotEmpty)) ListTile(
-                  title: Text('Approve follow requests'),
-                  trailing: Chip(
-                    label: Text(me.doc.data()['follow_requests'].length > 0 ? '+${me.doc.data()['follow_requests'].length}' : 'No Requests', style: TextStyle(color: Colors.white),),
-                    backgroundColor: Colors.indigoAccent,
-                  ),
-                  onTap: () => Navigator.of(context).push(RivalNavigator(page: FollowRequests(),)),
-                ),
-                ... List.generate(user.followers.length, (index) => UserListTile(ref: user.followers[index],))
-              ],
+      body: SingleChildScrollView(
+        physics: ScrollPhysics(),
+        child: Column(
+          children: [
+            if (!me.data['allow_new_followers'] || me.data['follow_requests'].length > 0) ListTile(
+              title: Text('Approve follow requests'),
+              trailing: Chip(
+                label: Text(me.data['follow_requests'].length > 0 ? '${me.data['follow_requests'].length}' : 'No Requests', style: TextStyle(color: Colors.white),),
+                backgroundColor: Colors.indigoAccent,
+              ),
+              onTap: () => Navigator.of(context).push(RivalNavigator(page: FollowRequests(),)),
             ),
-          );
-        },
+            PagedListView(
+              autoNextPage: false,
+              itemsPerPage: 30,
+              useSeparator: false,
+              onNextPage: (startIndex, endIndex) async {
+                Map<String, Future<RivalUser>> followersL = followers.getRange(startIndex, endIndex);
+                List<Widget> widgets = [];
+                followersL.forEach((uid, future) {
+                  if (uid != me.uid) widgets.add(UserListTile(
+                    future: future,
+                    isCurrentUser: false,
+                  ));
+                  else widgets.add(UserListTile(
+                    isCurrentUser: true,
+                  ));
+                });
+                return widgets;
+              },
+            )
+          ],
+        ),
       ),
     );
   }

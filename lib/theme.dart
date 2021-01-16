@@ -65,5 +65,5 @@ class RivalFonts {
   @Deprecated('Use the getter rival instead')
   static String get main => 'Playfair Display';
   static String get body => 'Roboto';
-  static String get feature => 'Product Sans';
+  static String get feature => 'SFPro';
 }

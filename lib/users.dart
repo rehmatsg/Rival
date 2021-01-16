@@ -5,6 +5,9 @@ import 'package:animations/animations.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:octo_image/octo_image.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:step_progress_indicator/step_progress_indicator.dart';
 import 'app.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -59,12 +62,24 @@ class RivalRootUser {
   }
   /// Reference to Document of user
   DocumentReference get reference => doc.reference;
-  /// Return [True] if account is a Business Account
-  bool get isBusinessAccount => data['type'] == 'business';
   /// Return [True] if account is a Creator Account
   bool get isCreatorAccount => data['type'] == 'creator';
   /// Return [True] if account is a Personal Account
   bool get isPersonalAccount => data['type'] == 'personal';
+  /// Return [True] if account is a Business Account
+  bool get isBusinessAccount => data['type'] == 'business';
+  /// Returns [Map<String, int>] map which contains all requests made to user for sponsor
+  /// Here the [String] is the uid of requester
+  /// And [int] is the timestamp of when request was sent
+  Map get partnerRequests => data['partnerRequests'];
+  /// If [true] means that we have to request partner approval
+  /// else it can be directly added
+  /// Return [bool]
+  bool get manuallyApprovePartnerRequests => data['manuallyApprovePartnerRequests'];
+  /// Returns [Map<String, int>] map which contains all users who are approved as partner
+  /// Here the [String] is the uid of requester
+  /// And [int] is the timestamp of when request was sent
+  Map get partners => data['partners'];
   /// Category of the Business user has
   String get category => data['category'];
   /// [ImageProvider] for user's profile photo. Does not return null in any case
@@ -96,12 +111,15 @@ class RivalRootUser {
   /// Update user's [DocumentSnapshot] with [Map<String, dynamaic>] data
   Future<void> update(Map<String, dynamic> data, {bool reload = false}) async {
     await reference.update(data);
-    if (reload) await me.reload();
+    if (reload) await this.reload();
   }
 
   /// Manually update user's [DocumentSnapshot] if it changes
-  Future<void> reload() async {
+  Future<void> reload({DocumentSnapshot update}) async {
     doc = await reference.get();
+    if (allLoadedUsers.indexWhere((element) => element.uid == uid) >= 0 && !allLoadedUsers.contains(this)) {
+      await allLoadedUsers[allLoadedUsers.indexWhere((element) => element.uid == uid)].reload(update: doc);
+    }
   }
 
 }
@@ -132,7 +150,6 @@ class Me extends RivalRootUser {
   /// Phone Number of the user. Maybe NULL
   @override
   String get phoneNumber => (firebaseUser.phoneNumber == null || firebaseUser.phoneNumber.trim() == "") ? null : firebaseUser.phoneNumber;
-  List get activity => [];
   /// List of [String] all tags I am subscribed to
   List get tagsSubscribed => data['tagsSubscribed'] ?? [];
   /// List of [DocumentReference] of Bookmarked Posts
@@ -146,8 +163,11 @@ class Me extends RivalRootUser {
     });
     return bookmarksById;
   }
-  /// [Map<String, int>] Map of all profile visits
-  Map get visits => data['visits'] ?? {};
+  /// [List<int>] Map of all profile visits
+  List get visits => data['visits'] ?? [];
+
+  /// List of [String] that contains all topics that current user is subscribed to
+  List get subscriptions => data['subscriptions'] ?? [];
 
   /// [Stream<Me>] of the user
   Stream<Me> get streamX {
@@ -158,15 +178,22 @@ class Me extends RivalRootUser {
   }
 
   Future<void> signOut(BuildContext context) async {
-    await reference.update({
-      'token': null
-    });
-    me = myPosts = timeline = storyItems = homeScreenPosts = homeScreenStories = topPosts = null;
-    await FirebaseAuth.instance.signOut();
-    RivalProvider.showToast(
-      text: 'Signed Out'
+    await Loader.show(
+      context,
+      function: () async {
+        await reference.update({
+          'token': null
+        });
+        me = myPosts = timeline = storyItems = homeScreenPosts = homeScreenStories = topPosts = null;
+        await FirebaseAuth.instance.signOut();
+      },
+      onComplete: () {
+        RivalProvider.showToast(
+          text: 'Signed Out'
+        );
+        Navigator.of(context).pushReplacement(RivalNavigator(page: SignIn(), transitionType: SharedAxisTransitionType.scaled));
+      }
     );
-    Navigator.of(context).pushReplacement(RivalNavigator(page: SignIn(), transitionType: SharedAxisTransitionType.scaled));
   }
 
   void navigateToProfile(BuildContext context) {
@@ -212,13 +239,14 @@ class Me extends RivalRootUser {
     );
   }
 
+  /// Returns `bool` whether the user is eligible for using Rival
   Future<bool> addDateOfBith({@required DateTime date}) async {
     int age = DateTime.now().year - date.year;
     if (age >= 12) {
       await me.update({
         'dob': Timestamp.fromDate(date)
       }, reload: true);
-      return false;
+      return true;
     } else {
       // Age not suitable
       return false;
@@ -434,4 +462,257 @@ Future<RivalUser> getUser(String uid) async {
   RivalUser rivalUser = RivalUser(doc: d);
   allLoadedUsers.add(rivalUser);
   return rivalUser;
+}
+
+class UserListTile extends StatefulWidget {
+
+  UserListTile({Key key, this.user, this.doc, this.id, this.ref, this.isCurrentUser, this.subtitle, this.future}) : super(key: key);
+  final RivalUser user;
+  /// UID of [RivalUser]. Initializing this class using UID automatically gets user by UID.
+  final String id;
+  final DocumentSnapshot doc;
+  final DocumentReference ref;
+  final bool isCurrentUser;
+  final String subtitle;
+  final Future<RivalUser> future;
+
+  @override
+  _UserListTileState createState() => _UserListTileState();
+}
+
+class _UserListTileState extends State<UserListTile> {
+
+  RivalUser user;
+  String id;
+  DocumentSnapshot doc;
+  
+  bool isCurrentUser = false;
+  bool isLoading = true;
+
+  _init() async {
+    if (widget.user != null) {
+      user = widget.user;
+      id = user.uid;
+      doc = user.doc;
+      isLoading = false;
+    } else if (widget.id != null) {
+      user = await getUser(widget.id);
+      id = widget.id;
+      doc = user.doc;
+      isLoading = false;
+    } else if (widget.doc != null) {
+      doc = widget.doc;
+      user = RivalUser(doc: doc);
+      id = doc.id;
+      isLoading = false;
+    } else if (widget.ref != null) {
+      await _getUserFromRef();
+    } else if (widget.future != null) {
+      user = await widget.future;
+      doc = user.doc;
+      id = doc.id;
+      isLoading = false;
+    }
+
+    if (widget.isCurrentUser != null) {
+      isCurrentUser = widget.isCurrentUser;
+    } else if (user.uid == me.uid) {
+      isCurrentUser = true;
+    } else {
+      isCurrentUser = false;
+    }
+    setState(() {});
+  }
+
+  @override
+  void initState() {
+    _init();
+    super.initState();
+  }
+
+  Future<void> _getUserFromRef() async {
+    doc = await widget.ref.get();
+    id = doc.id;
+    user = RivalUser(doc: doc);
+    setState(() {
+      isLoading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Visibility(
+      visible: (isLoading || isCurrentUser) ? true : (user.amIBlocked ? false : true),
+      child: ListTile(
+        visualDensity: VisualDensity.compact,
+        leading: isCurrentUser
+        ? ((me.stories != null && me.stories.length > 0)
+          ? GestureDetector(
+            onTap: () async {
+              await RivalProvider.vibrate();
+              Navigator.of(context).push(RivalNavigator(page: ViewStory(launchedFromHomeScreen: false, users: [me])));
+            },
+            child: CircularStepProgressIndicator(
+              totalSteps: me.stories.length,
+              unselectedColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black38 : Colors.white38,
+              width: 40,
+              height: 40,
+              padding: me.stories.length > 1 ? (22/7) / 15 : 0,
+              customStepSize: (intn, boo) => 2,
+              child: Padding(
+                padding: const EdgeInsets.all(2.0),
+                child: ClipOval(
+                  child: ProfilePhoto(width: 30, height: 30,),
+                ),
+              ),
+            ),
+          )
+          : ClipOval(
+            child: ProfilePhoto(width: 40, height: 40,),
+          )
+        )
+        : (
+          isLoading
+          ? Shimmer.fromColors(
+            child: Container(
+              decoration: BoxDecoration(
+                color: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.grey[200] : Colors.grey[900],
+                borderRadius: BorderRadius.all(Radius.circular(100))
+              ),
+              height: 40,
+              width: 40
+            ),
+            baseColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.grey[200] : Colors.grey[900],
+            highlightColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.grey[200] : Colors.grey[900]
+          )
+          : ((user.stories != null && user.stories.length > 0)
+            ? GestureDetector(
+              onTap: () async {
+                await RivalProvider.vibrate();
+                Navigator.of(context).push(RivalNavigator(page: ViewStory(launchedFromHomeScreen: false, users: [user],)));
+              },
+              child: CircularStepProgressIndicator(
+                totalSteps: user.stories.length,
+                unselectedColor: (user.storyViewed || user.uid == me.user.uid) ? (MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black38 : Colors.white38) : Colors.indigoAccent,
+                width: 40,
+                height: 40,
+                padding: user.stories.length > 1 ? (22/7) / 15 : 0,
+                customStepSize: (intn, boo) => 2,
+                child: Padding(
+                  padding: const EdgeInsets.all(2.0),
+                  child: ClipOval(
+                    child: OctoImage(
+                      image: user.photo,
+                      placeholderBuilder: (context) => CircularProgressIndicator()
+                    ),
+                  ),
+                ),
+              ),
+            )
+            : ClipOval(
+              child: OctoImage(
+                image: user.photo,
+                placeholderBuilder: (context) => CircularProgressIndicator(),
+                width: 40,
+                height: 40,
+              ),
+            )
+          )),
+        title: isCurrentUser
+          ? Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (widget.subtitle != null) Text(me.username)
+              else Flexible(
+                flex: 1,
+                child: Text(me.displayName, overflow: TextOverflow.ellipsis,)
+              ),
+              if (me.isVerified) ... [
+                Container(width: 5,),
+                VerifiedBadge()
+              ]
+            ],
+          )
+          : (isLoading
+          ? Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                height: 14,
+                width: MediaQuery.of(context).size.width / 2,
+                child: Shimmer.fromColors(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.grey[200] : Colors.grey[900],
+                      borderRadius: BorderRadius.all(Radius.circular(2))
+                    ),
+                    width: MediaQuery.of(context).size.width * 0.8,
+                  ),
+                  baseColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.grey[200] : Colors.grey[900],
+                  highlightColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.grey[200] : Colors.grey[900]
+                ),
+              ),
+            ],
+          )
+          : Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                flex: 1,
+                child: Text(widget.subtitle != null ? user.username : user.displayName),
+              ),
+              if (user.isVerified) ... [
+                Container(width: 5,),
+                VerifiedBadge()
+              ],
+            ],
+          )),
+        subtitle: isCurrentUser ? Text(widget.subtitle != null ? widget.subtitle : me.username) : (isLoading ? Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              height: 11,
+              width: MediaQuery.of(context).size.width / 3,
+              child: Shimmer.fromColors(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.all(Radius.circular(2))
+                  ),
+                  width: MediaQuery.of(context).size.width * 0.8,
+                ),
+                baseColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black12 : Colors.white10,
+                highlightColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black26 : Colors.white10
+              ),
+            ),
+          ],
+        ) : Text(widget.subtitle != null ? widget.subtitle : user.username)),
+        trailing: (isLoading || isCurrentUser) ? null : FlatButton(
+          onPressed: () async {
+            await RivalProvider.vibrate();
+            user.followUnfollowRequest();
+          },
+          child: StreamBuilder<DocumentSnapshot>(
+            stream: user.reference.snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.active) {
+                user = RivalUser(doc: snapshot.data);
+                return Text(user.followUnfollow, style: TextStyle(color: Colors.indigoAccent, fontWeight: FontWeight.bold),);
+              }
+              return Text(user.followUnfollow, style: TextStyle(color: Colors.indigoAccent, fontWeight: FontWeight.bold),);
+            },
+          ),
+          splashColor: Colors.indigoAccent.withOpacity(0.2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(10))
+          ),
+        ),
+        onTap: () {
+          if (!isLoading) {
+            user.navigateToProfile(context);
+          }
+        },
+      ),
+    );
+  }
 }

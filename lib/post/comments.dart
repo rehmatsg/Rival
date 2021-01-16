@@ -294,7 +294,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:octo_image/octo_image.dart';
-import 'package:visibility_detector/visibility_detector.dart';
 import '../app.dart';
 
 class PostComments extends StatefulWidget {
@@ -325,12 +324,43 @@ class _PostCommentsState extends State<PostComments> {
   int commentsPage = 0;
   bool moreCommentsAvailable = true;
 
+  Widget get commentsWidget => PagedListView(
+    itemsPerPage: 25,
+    useSeparator: true,
+    onNextPage: (startIndex, endIndex) async {
+      if (startIndex > comments.length) startIndex = comments.length - 1;
+      if (endIndex > comments.length) {
+        endIndex = comments.length;
+      }
+      print('Start Index: $startIndex. End Index: $endIndex');
+      List commentsRef = comments.values.toList().sublist(startIndex, endIndex);
+      print('Comments Ref: ${commentsRef.length}');
+      if (commentsByUser == null) commentsByUser = [];
+      List<Widget> wid = [];
+      for (var ref in commentsRef) {
+        DocumentSnapshot doc = await ref.get();
+        if (doc.exists && doc.data()['user'] != me.uid) {
+          DocumentReference userRef = doc.data()['userRef'];
+          RivalUser rivalUser = await getUser(userRef.id);
+          wid.add(
+            UserCommentView(
+              user: rivalUser,
+              comment: doc.data()['comment'],
+              timeago: getTimeAgo(new DateTime.fromMillisecondsSinceEpoch(doc.data()['timestamp']), includeHour: true),
+            )
+          );
+        }
+      }
+      return wid;
+    },
+    onFinish: 'No More Comments',
+  );
+
   @override
   void initState() {
     post = widget.post;
     comments = post.comments;
     _getMyComments();
-    _getPagedComments(commentsPage);
     super.initState();
   }
   
@@ -357,87 +387,60 @@ class _PostCommentsState extends State<PostComments> {
           preferredSize: Size(double.infinity, 0.5)
         ) : null,
       ),
-      body: ListView(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-            child: TextFormField(
-              controller: commentController,
-              decoration: InputDecoration(
-                filled: true,
-                prefixIcon: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: ProfilePhoto(width: 12, height: 12, hero: false,),
+      body: SingleChildScrollView(
+        physics: ScrollPhysics(),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+              child: TextFormField(
+                controller: commentController,
+                decoration: InputDecoration(
+                  filled: true,
+                  prefixIcon: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: ProfilePhoto(width: 12, height: 12, hero: false,),
+                  ),
+                  suffixIcon: isLoadingX ? null : IconButton(
+                    icon: Icon(Icons.send),
+                    onPressed: _sendComment,
+                  ),
+                  labelText: 'Type a comment...',
                 ),
-                suffixIcon: isLoadingX ? null : IconButton(
-                  icon: Icon(Icons.send),
-                  onPressed: _sendComment,
+                onFieldSubmitted: (value) => _sendComment(),
+                minLines: 1,
+                maxLines: 7,
+              ),
+            ),
+            if (myComments != null) ... List.generate(
+              myComments.length,
+              (index) => ListTile(
+                leading: ProfilePhoto(width: 30, height: 30, hero: false,),
+                title: Text(myComments[index].data()['comment']),
+                //isThreeLine: true,
+                subtitle: Text('${me.username} • ${getTimeAgo(new DateTime.fromMillisecondsSinceEpoch(myComments[index].data()['timestamp']), includeHour: true)}'),
+                trailing: IconButton(
+                  icon: Icon(Icons.delete),
+                  onPressed: () async {
+                    int commentTimestamp = myComments[index].data()['timestamp'];
+                    await post.reference .update({
+                      'comments.$commentTimestamp': FieldValue.delete()
+                    });
+                    await myComments[index].reference.delete();
+                    setState(() {
+                      myComments.removeAt(index);
+                    });
+                    RivalProvider.showToast(text: 'Comment Deleted');
+                  },
+                  tooltip: 'Delete Comment',
                 ),
-                labelText: 'Type a comment...',
-              ),
-              onFieldSubmitted: (value) => _sendComment(),
-              minLines: 1,
-              maxLines: 7,
+                visualDensity: VisualDensity.compact,
+              )
             ),
-          ),
-          if (myComments != null) ... List.generate(
-            myComments.length,
-            (index) => ListTile(
-              leading: ProfilePhoto(width: 30, height: 30, hero: false,),
-              title: Text(myComments[index].data()['comment']),
-              isThreeLine: true,
-              subtitle: Text('${me.username} • ${getTimeAgo(new DateTime.fromMillisecondsSinceEpoch(myComments[index].data()['timestamp']), includeHour: true)}'),
-              trailing: IconButton(
-                icon: Icon(Icons.delete),
-                onPressed: () async {
-                  int commentTimestamp = myComments[index].data()['timestamp'];
-                  await post.reference .update({
-                    'comments.$commentTimestamp': FieldValue.delete()
-                  });
-                  await myComments[index].reference.delete();
-                  setState(() {
-                    myComments.removeAt(index);
-                  });
-                  RivalProvider.showToast(text: 'Comment Deleted');
-                },
-                tooltip: 'Delete Comment',
-              ),
-            )
-          ),
-          Divider(),
-          if (commentsByUser != null) ... List.generate(
-            commentsByUser.length,
-            (index) => commentsByUser[index]
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 15),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (moreCommentsAvailable) ... [
-                  if (isLoading) CircularProgressIndicator(
-                    strokeWidth: 2,
-                  ) else VisibilityDetector(
-                    key: UniqueKey(),
-                    onVisibilityChanged: (info) {
-                      if (info.visibleFraction == 1) {
-                        _getPagedComments(commentsPage);
-                      }
-                    },
-                    child: IconButton(
-                      icon: Icon(Icons.refresh),
-                      onPressed: () async {
-                        await _getPagedComments(commentsPage);
-                      }
-                    ),
-                  )
-                ] else if (commentsByUser != null && !isLoading && !moreCommentsAvailable) ... [
-                  Text('No more comments available', style: Theme.of(context).textTheme.caption,)
-                ]
-              ],
-            ),
-          )
-        ],
+            Divider(),
+            commentsWidget
+          ],
+        ),
       ),
     );
   }
@@ -476,44 +479,6 @@ class _PostCommentsState extends State<PostComments> {
     }
   }
 
-  _getPagedComments(int page) async {
-    setState(() {
-      isLoading = true;
-    });
-    int startIndex = page * 50;
-    int endIndex = startIndex + 50;
-
-    if (startIndex > comments.length) startIndex = comments.length - 1;
-    if (endIndex > comments.length) {
-      endIndex = comments.length;
-      moreCommentsAvailable = false;
-    }
-    List commentsDoc = [];
-    List commentsRef = comments.values.toList().sublist(startIndex, endIndex);
-    if (commentsByUser == null) commentsByUser = [];
-    for (var ref in commentsRef) {
-      DocumentSnapshot doc = await ref.get();
-      commentsDoc.add(doc);
-      if (doc.exists && doc.data()['user'] != me.uid) {
-        DocumentReference userRef = doc.data()['userRef'];
-        RivalUser rivalUser = await getUser(userRef.id);
-        setState(() {
-          commentsByUser.add(
-            UserCommentView(
-              user: rivalUser,
-              comment: doc.data()['comment'],
-              timeago: getTimeAgo(new DateTime.fromMillisecondsSinceEpoch(doc.data()['timestamp']), includeHour: true),
-            )
-          );
-        });
-      }
-    }
-    setState(() {
-      commentsPage += 1;
-      isLoading = false;
-    });
-  }
-
 }
 
 class UserCommentView extends StatefulWidget {
@@ -544,20 +509,45 @@ class _UserCommentViewState extends State<UserCommentView> {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      onTap: () => Navigator.of(context).push(RivalNavigator(page: ProfilePage(isCurrentUser: false, user: user,),)),
-      leading: ClipOval(
-        child: OctoImage(
-          image: user.photo,
-          width: 40,
-          height: 40,
-          placeholderBuilder: (context) => Container(
-            color: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.grey[100] : Colors.white10
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: Row(
+            children: [
+              ClipOval(
+                child: OctoImage(
+                  width: 30,
+                  height: 30,
+                  image: user.photo,
+                ),
+              ),
+              Container(width: 10,),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(user.username, style: Theme.of(context).textTheme.subtitle1),
+                  Text(timeago, style: Theme.of(context).textTheme.caption),
+                ],
+              ),
+            ],
           ),
         ),
-      ),
-      title: Text(comment),
-      subtitle: Text('${user.username} • $timeago'),
+        Padding(
+          padding: EdgeInsets.only(left: 50, right: 10),
+          child: TextParser(
+            text: comment,
+            textStyle: Theme.of(context).textTheme.bodyText1,
+            matchedWordStyle: Theme.of(context).textTheme.bodyText1.copyWith(fontWeight: FontWeight.bold),
+            regexes: [
+              RivalRegex.username
+            ],
+          ),
+        )
+      ],
     );
   }
 }

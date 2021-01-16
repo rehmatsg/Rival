@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:expandable/expandable.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_icons/flutter_icons.dart';
 import 'package:intl/intl.dart';
 import 'package:octo_image/octo_image.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -1001,13 +1002,13 @@ class _ProfilePageState extends State<ProfilePage> {
       isCurrentUser = false;
       //postsView = UserPostsView(user: user);
     } else if (widget.username != null) {
-      String username = widget.username.replaceAll('@', '');
-      if (username.toLowerCase().trim() == me.username) {
+      String username = widget.username.replaceAll(new RegExp(RivalRegex.specialChars), '').toLowerCase().trim();
+      if (username == me.username) {
         user = me;
         isCurrentUser = true;
         //postsView = MyPostsView();
       } else {
-        user = await RivalProvider.getUserByUsername(widget.username);
+        user = await RivalProvider.getUserByUsername(username);
         isCurrentUser = false;
         //postsView = UserPostsView(user: user);
       }
@@ -1022,15 +1023,17 @@ class _ProfilePageState extends State<ProfilePage> {
         //postsView = UserPostsView(user: user);
       }
     }
-    if (!isCurrentUser) {
+    if (!isCurrentUser && user != null) {
       await user.reference.update({
-        'visits.${me.uid}': new DateTime.now().millisecondsSinceEpoch
+        'visits': FieldValue.arrayUnion([new DateTime.now().millisecondsSinceEpoch])
       });
     }
-    postsFuture = _getUserPosts();
-    setState(() {
-      isLoading = false;
-    });
+    if (user != null) {
+      postsFuture = _getUserPosts();
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   @override
@@ -1060,7 +1063,7 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 Text('@${user.username}', style: Theme.of(context).textTheme.headline3.copyWith(fontFamily: RivalFonts.feature),),
                 Container(height: 10,),
-                Text('You have blocked ${user.displayName}. Unblock @${user.username} to view profile. ${user.username} will be able to see your Posts and Stories if you unblock them. Rival won\'t inform if you unblock them', style: Theme.of(context).textTheme.bodyText1),
+                Text('You have blocked ${user.displayName}. Unblock @${user.username} to view profile. ${user.username} will be able to see your posts and stories if you unblock them.', style: Theme.of(context).textTheme.bodyText1),
                 Container(height: 10,),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -1090,25 +1093,58 @@ class _ProfilePageState extends State<ProfilePage> {
           )
         ),
       );
+    } else if (!isCurrentUser && user != null && user.amIBlocked) {
+      return Scaffold(
+        key: _scaffoldKey,
+        appBar: AppBar(
+          title: Text('Profile'),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 15),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.report, size: Theme.of(context).textTheme.headline2.fontSize,),
+                Text('You cannot view @${user.username} profile because you have been blocked.', style: Theme.of(context).textTheme.bodyText1,),
+              ],
+            ),
+          )
+        ),
+      );
     } else if (user == null && isLoading) {
       return Scaffold(
         body: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Stack(
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.arrow_back),
-                    onPressed: () => Navigator.of(context).pop()
-                  ),
-                ]
+              Align(
+                alignment: Alignment.topCenter,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.arrow_back),
+                      onPressed: () => Navigator.of(context).pop()
+                    ),
+                  ]
+                ),
               ),
+              Align(
+                alignment: Alignment.center,
+                child: Center(
+                  child: Container(
+                    width: 50,
+                    height: 50,
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation(Colors.white)
+                    )
+                  ),
+                ),
+              )
             ],
           ),
         ),
-      ); 
+      );
     } else if (user == null && !isLoading) {
       return Scaffold(
         key: _scaffoldKey,
@@ -1121,22 +1157,8 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('404', style: Theme.of(context).textTheme.headline3.copyWith(fontFamily: RivalFonts.feature),),
-                Container(height: 10,),
-                Text('User Not Found', style: Theme.of(context).textTheme.bodyText1),
-                Container(height: 10,),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    FlatButton(
-                      child: Text('Go Back', style: TextStyle(color: Colors.indigoAccent)),
-                      onPressed: () => Navigator.of(context).pop(),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(10))
-                      ),
-                    ),
-                  ],
-                )
+                Icon(Icons.report, size: Theme.of(context).textTheme.headline1.fontSize,),
+                Text('User Not Found', style: Theme.of(context).textTheme.headline4.copyWith(fontFamily: RivalFonts.feature),),
               ],
             ),
           )
@@ -1165,9 +1187,14 @@ class _ProfilePageState extends State<ProfilePage> {
               onTap: () => Navigator.of(context).push(RivalNavigator(page: BookmarkedPosts(),))
             ),
             ListTile(
-              leading: Icon(Icons.person_pin),
-              title: Text('Tagged Posts'),
-              onTap: () => Navigator.of(context).push(RivalNavigator(page: TaggedPosts(),),)
+              leading: Icon(FontAwesome.hashtag),
+              title: Text('Tag Subscriptions'),
+              onTap: () => Navigator.of(context).push(RivalNavigator(page: TagSubscription(),))
+            ),
+            ListTile(
+              leading: Icon(Icons.view_list),
+              title: Text('Topic Subscriptions'),
+              onTap: () => Navigator.of(context).push(RivalNavigator(page: SubscribeToTopics(),))
             ),
             ListTile(
               leading: Icon(Icons.person),
@@ -1240,7 +1267,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         onSelected: (value) async {
                           switch (value) {
                             case 'copyUrl':
-                              String url = await createDynamicURL(link: 'https://rival.photography/profile/@${user.username}');
+                              String url = await createDynamicURL(link: 'https://rival.photography/profile/@${user.username}', title: '${user.displayName}', description: 'View @${user.username} profile on Rival');
                               await Clipboard.setData(ClipboardData(text: url));
                               RivalProvider.showToast(text: 'Copied to Clipboard');
                               break;
@@ -1269,10 +1296,17 @@ class _ProfilePageState extends State<ProfilePage> {
                               );
                               break;
                             case 'block':
-                              await user.blockUnblock();
-                              await user.reload();
-                              await me.reload();
-                              Navigator.of(context).maybePop();
+                              Loader.show(
+                                context,
+                                function: () async {
+                                  await user.blockUnblock();
+                                  await user.reload();
+                                  await me.reload();
+                                },
+                                onComplete: () {
+                                  Navigator.of(context).pop();
+                                }
+                              );
                               break;
                             default:
                           }
@@ -1410,7 +1444,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         if (isCurrentUser) {
                           RivalProvider.vibrate();
                           Navigator.of(context).push(RivalNavigator(page: PostsByUser(isCurrentUser: true)));
-                        } else {
+                        } else if (!user.private) {
                           RivalProvider.vibrate();
                           Navigator.of(context).push(RivalNavigator(page: PostsByUser(isCurrentUser: false, user: user,)));
                         }
@@ -1633,12 +1667,12 @@ class _ProfilePageState extends State<ProfilePage> {
     List<Post> posts = [];
 
     if (user.uid == me.uid) {
-      if (refs.length < 3 && myPosts.length >= 3) {
+      if (refs.length < 3 && myPosts.length == refs.length) {
         setState(() {
           arePostsLoading = false;
         });
         return myPosts;
-      } else if (refs.length > 3 && myPosts.length >= 3) {
+      } else if (refs.length >= 3 && myPosts.length >= 3) {
         setState(() {
           arePostsLoading = false;
         });
@@ -1650,10 +1684,17 @@ class _ProfilePageState extends State<ProfilePage> {
       for (DocumentReference ref in refs) {
         posts.add(await Post.fetch(ref: ref, user: user));
       }
+      if (user.uid == me.uid) myPosts = posts;
     } else {
-      for (DocumentReference ref in refs.getRange(0, 3).toList()) {
-        if (user.uid == me.uid) posts.add(await Post.fetch(ref: ref));
-        else posts.add(await Post.fetch(ref: ref, user: user));
+      if (user.uid == me.uid) {
+        myPosts = []; // My Posts is already empty or null
+        for (DocumentReference ref in refs.getRange(0, refs.length >= 10 ? 10 : refs.length).toList()) {
+          Post post = await Post.fetch(ref: ref);
+          if (refs.getRange(0, refs.length >= 10 ? 10 : refs.length).toList().indexOf(ref) < 3) posts.add(post);
+          myPosts.add(post);
+        }
+      } else for (DocumentReference ref in refs.getRange(0, 3).toList()) {
+        posts.add(await Post.fetch(ref: ref, user: user));
       }
     }
 

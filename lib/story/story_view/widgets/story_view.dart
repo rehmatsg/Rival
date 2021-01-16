@@ -6,6 +6,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:delayed_display/delayed_display.dart';
 import 'package:flutter/material.dart';
 import 'package:octo_image/octo_image.dart';
+import 'package:preload_page_view/preload_page_view.dart';
 
 import '../../provider.dart';
 import '../controller/story_controller.dart';
@@ -99,16 +100,32 @@ class StoryItem {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
-                title,
-                style: textStyle?.copyWith(
-                      color: contrast > 1.8 ? Colors.white : Colors.black,
-                    ) ??
-                    TextStyle(
-                      color: contrast > 1.8 ? Colors.white : Colors.black,
-                      fontSize: 18,
-                    ),
+              // Text(
+              //   title,
+              //   style: textStyle?.copyWith(
+              //     color: contrast > 1.8 ? Colors.white : Colors.black,
+              //   ) ?? TextStyle(
+              //     color: contrast > 1.8 ? Colors.white : Colors.black,
+              //     fontSize: 35,
+              //   ),
+              //   textAlign: TextAlign.center,
+              // ),
+              TextParser(
+                text: title,
                 textAlign: TextAlign.center,
+                textStyle: textStyle?.copyWith(
+                  color: contrast > 1.8 ? Colors.white : Colors.black,
+                  fontFamily: story.font
+                ) ?? TextStyle(
+                  color: contrast > 1.8 ? Colors.white : Colors.black,
+                  fontFamily: story.font,
+                  fontSize: 35,
+                ),
+                matchedWordStyle: TextStyle(
+                  fontWeight: FontWeight.bold
+                ),
+                ifEmail: (email) { },
+                ifUrl: (url) {},
               ),
               bottomWidget ?? Container()
             ],
@@ -551,10 +568,14 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
 
   StoryItem get _currentStory => widget.storyItems.firstWhere((it) => !it.shown, orElse: () => null);
 
+  // ignore: unused_element
   Widget get _currentView => widget.storyItems.firstWhere((it) => !it.shown, orElse: () => widget.storyItems.last).view;
+
+  PreloadPageController pageController;
 
   @override
   void initState() {
+    pageController = PreloadPageController(initialPage: widget.storyItems.indexOf(widget.storyItems.firstWhere((it) => !it.shown, orElse: () => widget.storyItems.last)),);
     super.initState();
 
     // All pages after the first unshown page should have their shown value as
@@ -577,8 +598,7 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
       });
     }
 
-    this._playbackSubscription =
-        widget.controller.playbackNotifier.listen((playbackStatus) {
+    this._playbackSubscription = widget.controller.playbackNotifier.listen((playbackStatus) {
       switch (playbackStatus) {
         case PlaybackState.play:
           _removeNextHold();
@@ -617,9 +637,7 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
 
   @override
   void setState(fn) {
-    if (mounted) {
-      super.setState(fn);
-    }
+    if (mounted) super.setState(fn);
   }
 
   void _play() {
@@ -640,6 +658,7 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
         storyItem.shown = true;
         if (widget.storyItems.last != storyItem) {
           _beginPlay();
+          pageController.animateToPage(widget.storyItems.indexOf(_currentStory), duration: Duration(milliseconds: 100), curve: Curves.easeInOut);
         } else {
           // done playing
           _onComplete();
@@ -686,8 +705,12 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
 
       previous.shown = false;
 
+      pageController.animateToPage(widget.storyItems.indexOf(previous), duration: Duration(milliseconds: 100), curve: Curves.easeInOut);
+
       _beginPlay();
     }
+
+    pageController.animateToPage(pageController.page.toInt() - 1, duration: Duration(milliseconds: 100), curve: Curves.easeInOut);
   }
 
   void _goForward() {
@@ -699,6 +722,8 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
 
       if (_last != null) {
         _last.shown = true;
+        print(widget.storyItems.indexOf(_currentStory));
+        pageController.animateToPage(widget.storyItems.indexOf(_currentStory), duration: Duration(milliseconds: 100), curve: Curves.easeInOut);
         if (_last != widget.storyItems.last) {
           _beginPlay();
         }
@@ -730,7 +755,14 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
       color: Colors.black,
       child: Stack(
         children: <Widget>[
-          _currentView,
+          PreloadPageView.builder(
+            preloadPagesCount: widget.storyItems.length > 10 ? 10 : widget.storyItems.length,
+            controller: pageController,
+            itemBuilder: (context, index) => widget.storyItems[index].view,
+            itemCount: widget.storyItems.length,
+            pageSnapping: false,
+            physics: NeverScrollableScrollPhysics(),
+          ),
           Align(
             alignment: Alignment.topCenter,
             child: SafeArea(

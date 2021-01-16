@@ -12,7 +12,7 @@ import 'src/text-alignment.dart';
 /// and then get the edited text style
 class TextEditor extends StatefulWidget {
   /// After edit process completed, [onEditCompleted] callback will be called.
-  final void Function(TextStyle, TextAlign, String, TextPlacement) onEditCompleted;
+  final void Function(TextStyle style, TextAlign align, String text, TextPlacement placement) onEditCompleted;
 
   /// [onTextAlignChanged] will be called after [textAlingment] prop has changed
   final ValueChanged<TextAlign> onTextAlignChanged;

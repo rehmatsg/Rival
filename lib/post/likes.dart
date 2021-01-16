@@ -193,11 +193,15 @@ class _PostLikesState extends State<PostLikes> {
   
   Post post;
   Map likes;
+  Map<String, Future<RivalUser>> people = {};
 
   @override
   void initState() {
     post = widget.post;
     likes = post.likes;
+    likes.forEach((uid, timestamp) {
+      people[uid] = getUser(uid);
+    });
     super.initState();
   }
   
@@ -212,13 +216,26 @@ class _PostLikesState extends State<PostLikes> {
       appBar: AppBar(
         title: Text('Likes'),
       ),
-      body: ListView.builder(
-        itemCount: likes.length > 100 ? 100 : likes.length,
-        itemBuilder: (context, index) => UserListTile(
-          id: likes.keys.toList()[index],
-          subtitle: getTimeAgo(new DateTime.fromMillisecondsSinceEpoch(likes.values.toList()[index]), includeHour: true),
-        ),
-      ),
+      body: PagedListView(
+        itemsPerPage: 30,
+        onFinish: 'That\'s all',
+        useSeparator: false,
+        onNextPage: (startIndex, endIndex) async {
+          Map<String, Future<RivalUser>> rangedPeople = people.getRange(startIndex, endIndex);
+          List<Widget> widgets = [];
+          rangedPeople.forEach((uid, future) {
+            if (uid != me.uid) widgets.add(UserListTile(
+              future: future,
+              subtitle: getTimeAgo(DateTime.fromMillisecondsSinceEpoch(likes[uid])),
+            ));
+            else widgets.add(UserListTile(
+              isCurrentUser: true,
+              subtitle: getTimeAgo(DateTime.fromMillisecondsSinceEpoch(likes[uid])),
+            ));
+          });
+          return widgets;
+        },
+      )
     );
   }
 }

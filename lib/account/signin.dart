@@ -68,6 +68,9 @@ class _SignInState extends State<SignIn> {
                               labelText: 'Email or Username',
                               filled: true,
                             ),
+                            onFieldSubmitted: (value) async {
+                              if (!isLoading && _formKey.currentState.validate()) await next();
+                            },
                           ),
                         ),
                       ),
@@ -85,34 +88,7 @@ class _SignInState extends State<SignIn> {
                                 borderRadius: BorderRadius.all(Radius.circular(10))
                               ),
                               onPressed: () async {
-                                if (!isLoading && _formKey.currentState.validate()) {
-                                  setState(() {
-                                    isLoading = true;
-                                  });
-                                  String eu = euCtrl.text; // Email, username or phone
-                                  String feature;
-                                  QuerySnapshot querySnapshot;
-                                  if (RegExp(RivalRegex.email).hasMatch(eu)) { // EUP is Email
-                                    querySnapshot = await firestore.collection('users').where('email', isEqualTo: eu.toLowerCase().trim()).get();
-                                    feature = eu;
-                                  } else { // EUP is Username
-                                    querySnapshot = await firestore.collection('users').where('username', isEqualTo: eu.toLowerCase().trim()).get();
-                                    feature = '@$eu';
-                                  }
-                                  if (querySnapshot.docs.length > 0) {
-                                    // RivalUser found
-                                    setState(() {
-                                      isLoading = false;
-                                    });
-                                    Navigator.of(context).push(RivalNavigator(page: EnterPassword(feature: feature, user: RivalUser(doc: querySnapshot.docs.first),), ));
-                                  } else {
-                                    // No user found with email
-                                    setState(() {
-                                      isLoading = false;
-                                    });
-                                    _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text('Account not found')));
-                                  }
-                                }
+                                if (!isLoading && _formKey.currentState.validate()) await next();
                               },
                               child: isLoading ? Container(
                                 height: 15,
@@ -146,6 +122,35 @@ class _SignInState extends State<SignIn> {
         ),
       ),
     );
+  }
+
+  Future<void> next() async {
+    setState(() {
+      isLoading = true;
+    });
+    String eu = euCtrl.text; // Email, username or phone
+    String feature;
+    QuerySnapshot querySnapshot;
+    if (RegExp(RivalRegex.email).hasMatch(eu)) { // EUP is Email
+      querySnapshot = await firestore.collection('users').where('email', isEqualTo: eu.toLowerCase().trim()).get();
+      feature = eu;
+    } else { // EUP is Username
+      querySnapshot = await firestore.collection('users').where('username', isEqualTo: eu.toLowerCase().trim()).get();
+      feature = '@$eu';
+    }
+    if (querySnapshot.docs.length > 0) {
+      // RivalUser found
+      setState(() {
+        isLoading = false;
+      });
+      Navigator.of(context).push(RivalNavigator(page: EnterPassword(feature: feature, user: RivalUser(doc: querySnapshot.docs.first),), ));
+    } else {
+      // No user found with email
+      setState(() {
+        isLoading = false;
+      });
+      _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text('Account not found')));
+    }
   }
 
 }
@@ -210,6 +215,9 @@ class _EnterPasswordState extends State<EnterPassword> {
                       errorText: passwordError
                     ),
                     obscureText: true,
+                    onFieldSubmitted: (value) async {
+                      await signIn();
+                    },
                   ),
                 ),
               ),
@@ -229,8 +237,8 @@ class _EnterPasswordState extends State<EnterPassword> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(Radius.circular(10))
                       ),
-                      onPressed: () {
-                        _signIn();
+                      onPressed: () async {
+                        await signIn();
                       },
                       child: isLoading ? Container(
                         height: 15,
@@ -248,7 +256,7 @@ class _EnterPasswordState extends State<EnterPassword> {
     );
   }
 
-  _signIn() async {
+  Future<void> signIn() async {
     String email = widget.user.email.toLowerCase().trim();
     String password = passwordController.text.trim();
     if (_formKey.currentState.validate() && email != null && password != null) {

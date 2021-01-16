@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_parsed_text/flutter_parsed_text.dart';
 import 'package:octo_image/octo_image.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:visibility_detector/visibility_detector.dart';
+import 'package:supercharged/supercharged.dart';
 import '../app.dart';
 
 /// Create a Horizontal Divider between two elements
@@ -59,7 +61,17 @@ class ProfilePhoto extends StatelessWidget {
 }
 
 class TextParser extends StatelessWidget {
-  TextParser({@required this.text, this.ifUsername, this.ifTag, this.ifEmail, this.ifUrl, @required this.textStyle, @required this.matchedWordStyle});
+  TextParser({
+    @required this.text,
+    this.ifUsername,
+    this.ifTag,
+    this.ifEmail,
+    this.ifUrl,
+    @required this.textStyle,
+    @required this.matchedWordStyle,
+    this.textAlign = TextAlign.left,
+    this.regexes
+  });
   final String text;
   final Function(String) ifUsername;
   final Function(String) ifTag;
@@ -67,15 +79,19 @@ class TextParser extends StatelessWidget {
   final Function(String) ifUrl;
   final TextStyle textStyle;
   final TextStyle matchedWordStyle;
+  final TextAlign textAlign;
+  final List<String> regexes;
+
   @override
   Widget build(BuildContext context) {
     return ParsedText(
       text: text,
       style: textStyle,
+      alignment: textAlign,
       parse: [
         MatchText(
           type: ParsedType.CUSTOM,
-          pattern: "${RivalRegex.username}|${RivalRegex.tag}|${RivalRegex.email}|${RivalRegex.url}",
+          pattern: _getPattern(),
           regexOptions: RegexOptions(
             caseSensitive: false,
             multiLine: true,
@@ -126,6 +142,21 @@ class TextParser extends StatelessWidget {
       ],
     );
   }
+
+  String _getPattern() {
+    String pattern;
+    if (regexes == null || regexes.isEmpty) {
+      pattern = "${RivalRegex.username}|${RivalRegex.tag}|${RivalRegex.email}|${RivalRegex.url}";
+    } else {
+      pattern = '';
+      regexes.forEachIndexed((index, r) {
+        pattern = pattern + r;
+        if (index.isOdd) pattern = pattern + '|';
+      });
+    }
+    return pattern;
+  }
+
 }
 
 class RivalNavigator<T> extends PageRouteBuilder<T> {
@@ -230,6 +261,152 @@ class Loader {
       ),
     );
     await function();
+    Navigator.of(context).pop();
     onComplete();
   }
+}
+
+class PagedListView extends StatefulWidget {
+
+  /// Return List of [Widget] to display
+  /// Start Index [int] and End Index [int] is provided
+  /// End Index is generally excluded in `range()` function so be careful while using
+  final Future<List<Widget>> Function(int startIndex, int endIndex) onNextPage;
+  /// Provide `itemsPerPage` [int] to tell how much items should be stored on a single page
+  final int itemsPerPage;
+  /// This [String] is used when no more data is available
+  /// We consider that no more data is available when you provide less items than `itemsPerPage`
+  final String onFinish;
+
+  /// Tell whether the next page should automatically load when user reaches the end of the list
+  /// Defaults to `true`
+  final bool autoNextPage;
+
+  /// Setting this to `true` will automatically add a `Divider()` between all data items
+  final bool useSeparator;
+
+  /// Provide a widget to override the default loading widget
+  final Widget loadingWidget;
+
+  /// This function is called when `onNextPage()` functions begins
+  final Function(bool isFirstPage) onLoadingStart;
+
+  /// This function is called when `onNextPage()` functions finishes
+  final Function(bool isFirstPage) onLoadingEnd;
+
+  PagedListView({
+    Key key,
+    this.onNextPage,
+    this.itemsPerPage = 30,
+    this.onFinish = "No more data",
+    this.useSeparator = false,
+    this.autoNextPage = true,
+    this.loadingWidget,
+    this.onLoadingStart,
+    this.onLoadingEnd
+  }) : super(key: key);
+
+  @override
+  _PagedListViewState createState() => _PagedListViewState();
+}
+
+class _PagedListViewState extends State<PagedListView> {
+
+  bool isLoading = true;
+  bool isNextPageLoading = false;
+  bool moreDataAvailable = true;
+
+  Future<List<Widget>> Function(int startIndex, int endIndex) onNextPage;
+  int itemsPerPage;
+
+  List<Widget> widgets;
+
+  int page = 1;
+
+  @override
+  void initState() {
+    onNextPage = widget.onNextPage;
+    itemsPerPage = widget.itemsPerPage;
+    _getFirstPage();
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      if (widget.loadingWidget == null) return Center(
+        child: CircularProgressIndicator(),
+      );
+      return widget.loadingWidget;
+    } else return SingleChildScrollView(
+      physics: ScrollPhysics(),
+      child: Column(
+        children: [
+          ListView.separated(
+            physics: NeverScrollableScrollPhysics(),
+            itemBuilder: (context, index) => widgets[index],
+            itemCount: widgets.length,
+            cacheExtent: MediaQuery.of(context).size.height * 2,
+            shrinkWrap: true,
+            separatorBuilder: (context, index) => widget.useSeparator ? Divider() : Container(),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 15),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (isNextPageLoading) CircularProgressIndicator(
+                  strokeWidth: 2,
+                ) else if (!moreDataAvailable) Text(
+                  widget.onFinish,
+                  style: Theme.of(context).textTheme.caption
+                ) else VisibilityDetector(
+                  key: UniqueKey(),
+                  onVisibilityChanged: (info) {
+                    if (info.visibleFraction == 1 && widget.autoNextPage) _getNextPage();
+                  },
+                  child: IconButton(
+                    icon: Icon(Icons.add_circle),
+                    onPressed: _getNextPage
+                  ),
+                )
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Future<void> _getFirstPage() async {
+    if (widget.onLoadingStart != null) widget.onLoadingStart(true);
+    widgets = await onNextPage(_getStartEndIndex(1)[0], _getStartEndIndex(1)[1]);
+    setState(() {
+      isLoading = false;
+      if (widgets.length < itemsPerPage) moreDataAvailable = false;
+    });
+    if (widget.onLoadingEnd != null) widget.onLoadingEnd(true);
+  }
+
+  List _getStartEndIndex(int page) {
+    int startIndex = ((page - 1) * itemsPerPage);
+    int endIndex = startIndex + itemsPerPage;
+    return [startIndex, endIndex];
+  }
+
+  Future<void> _getNextPage() async {
+    if (widget.onLoadingStart != null) widget.onLoadingStart(false);
+    setState(() {
+      isNextPageLoading = true;
+    });
+    page += 1;
+    List<Widget> nextPageWidgets = await onNextPage(_getStartEndIndex(page)[0], _getStartEndIndex(page)[1]);
+    widgets.addAll(nextPageWidgets);
+    setState(() {
+      isNextPageLoading = false;
+      if (nextPageWidgets.length < itemsPerPage) moreDataAvailable = false;
+    });
+    if (widget.onLoadingEnd != null) widget.onLoadingEnd(false);
+  }
+
 }

@@ -1,3 +1,4 @@
+import 'package:e/post/select_topic.dart';
 import 'package:flutter/material.dart';
 
 import 'dart:io';
@@ -14,7 +15,6 @@ import 'package:flutter_native_image/flutter_native_image.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:liquid_progress_indicator/liquid_progress_indicator.dart';
-import 'package:material_tag_editor/tag_editor.dart';
 import 'package:octo_image/octo_image.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import '../app.dart';
@@ -68,6 +68,7 @@ class _CreatePostState extends State<CreatePost> {
   List<String> ocrText = [];
   List<DocumentReference> people = [];
   List<DocumentSnapshot> peopleDocs = [];
+  String topic;
 
   bool allowComments = true;
   bool containsAdultContent = false;
@@ -305,7 +306,7 @@ class _CreatePostState extends State<CreatePost> {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: <Widget>[
-                                  Icon(Icons.add_circle, size: 60,),
+                                  Icon(Icons.add_circle, size: 50,),
                                   Text(
                                     'Add Image',
                                     style: TextStyle(
@@ -313,7 +314,11 @@ class _CreatePostState extends State<CreatePost> {
                                       fontSize: 25,
                                     )
                                   ),
-                                  Text(index < 9 ? '(${index + 1})' : '${index + 1}', style: TextStyle(color: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black26 : Colors.white24, fontFamily: RivalFonts.feature),)
+                                  Text('${index + 1}', style: TextStyle(
+                                    color: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black26 : Colors.white24,
+                                    fontFamily: RivalFonts.feature,
+                                    fontSize: Theme.of(context).textTheme.caption.fontSize
+                                  ),)
                                 ],
                               ),
                               onTap: () async {
@@ -336,6 +341,28 @@ class _CreatePostState extends State<CreatePost> {
                       itemCount: noOfImages,
                     ),
                   ),
+                  if (me.isCreatorAccount) ... [
+                    Divider(),
+                    ListTile(
+                      title: Text('Creator', style: TextStyle(fontFamily: RivalFonts.feature),),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Tooltip(
+                            message: 'Use Rival\'s built-in creator to make custom graphics',
+                            child: Icon(Icons.help)
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 10),
+                            child: GestureDetector(
+                              onTap: () => Navigator.of(context).push(RivalNavigator(page: PostCreator())),
+                              child: Icon(Icons.arrow_forward),
+                            ),
+                          )
+                        ],
+                      ),
+                    ),
+                  ],
                   Divider(),
                   ListTile(
                     title: Text('General', style: TextStyle(fontFamily: RivalFonts.feature),)
@@ -392,21 +419,21 @@ class _CreatePostState extends State<CreatePost> {
                               inputFormatters: [
                                 LengthLimitingTextInputFormatter(500),
                               ],
-                              onChanged: (desc) {
-                                if (desc.endsWith(' ') || desc.endsWith('.')) {
-                                  List<String> descList = desc.split(' ');
-                                  tags.clear();
-                                  descList.forEach((word) {
-                                    if (word.startsWith('#') && word.length > 1) {
-                                      if (word.endsWith('.')) {
-                                        _addTag(word.substring(1, word.length - 1));
-                                      } else {
-                                        _addTag(word.substring(1, word.length));
-                                      }
-                                    }
-                                  });
-                                }
-                              },
+                              // onChanged: (desc) {
+                              //   if (desc.endsWith(' ') || desc.endsWith('.')) {
+                              //     List<String> descList = desc.split(' ');
+                              //     tags.clear();
+                              //     descList.forEach((word) {
+                              //       if (word.startsWith('#') && word.length > 1) {
+                              //         if (word.endsWith('.')) {
+                              //           _addTag(word.substring(1, word.length - 1));
+                              //         } else {
+                              //           _addTag(word.substring(1, word.length));
+                              //         }
+                              //       }
+                              //     });
+                              //   }
+                              // },
                             ),
                           ),
                           // if (tags.length > 0) Padding(
@@ -426,42 +453,42 @@ class _CreatePostState extends State<CreatePost> {
                           //     ),
                           //   )
                           // ),
-                          Padding(
-                            padding: EdgeInsets.symmetric(vertical: 10),
-                            child: TagEditor(
-                              length: tags.length,
-                              delimeters: [',', ' ', '.'],
-                              tagBuilder: (context, index) => Chip(
-                                labelPadding: const EdgeInsets.only(left: 8.0),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.all(Radius.circular(10))
-                                ),
-                                label: Text("#${tags[index]}"),
-                                deleteIcon: Icon(
-                                  Icons.close,
-                                  size: 18,
-                                ),
-                                onDeleted: () {
-                                  try {
-                                    setState(() {
-                                      tags.removeAt(index);
-                                    });
-                                  } catch (e) {
-                                    print('Error occured while removing tag');
-                                    setState(() { });
-                                  }
-                                },
-                              ),
-                              onTagChanged: (tag) {
-                                _addTag(tag);
-                              },
-                              inputDecoration: InputDecoration(
-                                filled: true,
-                                labelText: 'Add Tags',
-                                counterText: 'Add up to $maxTags tags',
-                              ),
-                            ),
-                          ),
+                          // Padding(
+                          //   padding: EdgeInsets.symmetric(vertical: 10),
+                          //   child: TagEditor(
+                          //     length: tags.length,
+                          //     delimeters: [',', ' ', '.'],
+                          //     tagBuilder: (context, index) => Chip(
+                          //       labelPadding: const EdgeInsets.only(left: 8.0),
+                          //       shape: RoundedRectangleBorder(
+                          //         borderRadius: BorderRadius.all(Radius.circular(10))
+                          //       ),
+                          //       label: Text("#${tags[index]}"),
+                          //       deleteIcon: Icon(
+                          //         Icons.close,
+                          //         size: 18,
+                          //       ),
+                          //       onDeleted: () {
+                          //         try {
+                          //           setState(() {
+                          //             tags.removeAt(index);
+                          //           });
+                          //         } catch (e) {
+                          //           print('Error occured while removing tag');
+                          //           setState(() { });
+                          //         }
+                          //       },
+                          //     ),
+                          //     onTagChanged: (tag) {
+                          //       _addTag(tag);
+                          //     },
+                          //     inputDecoration: InputDecoration(
+                          //       filled: true,
+                          //       labelText: 'Add Tags',
+                          //       counterText: 'Add up to $maxTags tags',
+                          //     ),
+                          //   ),
+                          // ),
                           // Padding(
                           //   padding: EdgeInsets.symmetric(vertical: 10),
                           //   child: TagEditor(
@@ -504,6 +531,28 @@ class _CreatePostState extends State<CreatePost> {
                       ),
                     ),
                   ),
+                  if (me.isCreatorAccount) ListTile(
+                    title: Text('Topic'),
+                    subtitle: Text('Add the topic of your post'),
+                    trailing: topic != null
+                    ? Chip(
+                      label: Text(topic),
+                      onDeleted: () {
+                        setState(() {
+                          topic = null;
+                        });
+                      },
+                    )
+                    : IconButton(
+                      icon: Icon(Icons.add_circle),
+                      onPressed: () async {
+                        String topicL = await Navigator.of(context).push(RivalNavigator(page: SelectTopic()));
+                        if (topicL != null) setState(() {
+                          topic = topicL;
+                        });
+                      },
+                    ),
+                  ),
                   Divider(),
                   ExpandablePanel(
                     controller: advancedSettingCtrl,
@@ -521,8 +570,8 @@ class _CreatePostState extends State<CreatePost> {
                           onTap: () => advancedSettingCtrl.toggle(),
                         ),
                         ListTile(
-                          title: Text('Allow comments'),
-                          subtitle: Text('Enabling commenting on this post'),
+                          title: Text('Enable Comments'),
+                          subtitle: Text('Allow other people to comment on your post'),
                           trailing: Switch.adaptive(
                             value: allowComments,
                             onChanged: (bool value) async {
@@ -645,7 +694,7 @@ class _CreatePostState extends State<CreatePost> {
                             ),
                           )
                         ],
-                        ListTile(
+                        if (me.isCreatorAccount) ListTile(
                           title: Text('Sponsor'),
                           subtitle: Text('Add the sponsor of your post'),
                           trailing: sponsor != null
@@ -665,65 +714,11 @@ class _CreatePostState extends State<CreatePost> {
                           )
                           : IconButton(
                             icon: Icon(Icons.add_circle),
-                            onPressed: () {
-                              TextEditingController usernameController = TextEditingController();
-                              showDialog(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  title: Text('Add a Sponsor'),
-                                  content: TextField(
-                                    controller: usernameController,
-                                    decoration: InputDecoration(
-                                      filled: true,
-                                      border: UnderlineInputBorder(
-                                        borderRadius: BorderRadius.all(Radius.circular(7)),
-                                        borderSide: BorderSide.none
-                                      ),
-                                      labelText: 'Username',
-                                      isDense: true
-                                    ),
-                                  ),
-                                  actions: [
-                                    FlatButton(
-                                      onPressed: () => Navigator.of(context).pop(),
-                                      child: Text('Cancel')
-                                    ),
-                                    FlatButton(
-                                      onPressed: () async {
-                                        Navigator.of(context).pop();
-                                        setState(() {
-                                          isLoadingX = true;
-                                          title = "Adding Partner";
-                                        });
-                                        String username = usernameController.text.toString().toLowerCase().trim();
-                                        username.replaceAll('@', '');
-                                        RivalUser partner = await RivalProvider.getUserByUsername(username);
-                                        if (partner != null && partner.uid != me.uid && ((partner.private && partner.isFollowing) || !partner.private) && !partner.amIBlocked && !partner.isBlocked) {
-                                          setState(() {
-                                            sponsor = partner;
-                                          });
-                                          _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text('Added @$username as sponsor')));
-                                        } else if (partner.isBlocked) {
-                                          _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text('Unblock @$username to tag in post')));
-                                        } else if (partner.amIBlocked) {
-                                          _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text('Failed to add @$username as partner')));
-                                        } else if (!partner.isFollowing && partner.private) {
-                                          _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text('@$username has a private account')));
-                                        } else if (partner.uid == me.uid) {
-                                          _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text('Cannot add yourself')));
-                                        } else if (partner == null) {
-                                          _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text('No user found with username @$username')));
-                                        }
-                                        setState(() {
-                                          isLoadingX = false;
-                                          title = "Create Post";
-                                        });
-                                      },
-                                      child: Text('Add')
-                                    )
-                                  ],
-                                ),
-                              );
+                            onPressed: () async {
+                              RivalUser spL = await Navigator.of(context).push(RivalNavigator(page: SelectSponsor()));
+                              if (spL != null) setState(() {
+                                sponsor = spL;
+                              });
                             }
                           ),
                         ),
@@ -774,6 +769,15 @@ class _CreatePostState extends State<CreatePost> {
                 ),
               ),
               Container(height: 20,),
+              // OutlineButton(
+              //   child: Text('Cancel'),
+              //   onPressed: () {
+              //     setState(() {
+              //       isPostBeingCreated = false;
+              //       isLoading = false;
+              //     });
+              //   },
+              // ),
               Text(loadingState != null ? loadingState : '...', style: TextStyle(fontFamily: RivalFonts.feature, fontSize: 20),)
             ],
           )
@@ -792,20 +796,21 @@ class _CreatePostState extends State<CreatePost> {
     }
   }
 
-  _addTag(String tg) async {
-    String tag = tg.replaceAll(new RegExp(r'\W+'),'');
-    String pattern = r'([\w]+)\b';
+  // ignore: unused_element
+  void _addTag(String tg) {
+    String tag = tg.replaceAll(new RegExp(RivalRegex.specialChars),'');
+    String pattern = RivalRegex.tag;
     RegExp regex = new RegExp(pattern);
     if (!regex.hasMatch(tag)) {
-      await RivalProvider.showToast(
+      RivalProvider.showToast(
         text: 'Unable to add tag',
       );
     } else if (tags.length >= maxTags) {
-      await RivalProvider.showToast(
+      RivalProvider.showToast(
         text: 'Max $maxTags tags',
       );
     } else if (tags.contains(tag)) {
-      await RivalProvider.showToast(
+      RivalProvider.showToast(
         text: 'Already added',
       );
     } else if (tags.length < maxTags) {
@@ -891,7 +896,11 @@ class _CreatePostState extends State<CreatePost> {
 
   Future<File> _pickImage({ImageSource source = ImageSource.gallery}) async {
     PickedFile pickedFile = await ImagePicker().getImage(source: source);
-    return File(pickedFile.path);
+    if (pickedFile != null) {
+      return File(pickedFile.path);
+    } else {
+      return null;
+    }
   }
 
   Future<File> _cropImage({@required File file}) async {
@@ -951,7 +960,7 @@ class _CreatePostState extends State<CreatePost> {
     setState(() {
       isLoading = true;
       title = 'Creating Post';
-      loadingState = "Getting things ready";
+      loadingState = "Building Post";
     });
     
     if (!me.user.emailVerified) {
@@ -966,114 +975,58 @@ class _CreatePostState extends State<CreatePost> {
     } else if (me.user.emailVerified && me.username != null && me.username != '' && (me.uid == "EQs5vlC8U1XWqJxdR3dHPgUrx413" || RivalRemoteConfig.allowNewPost) && await checkInternetConnectivity() && !isPostBeingCreated) {
       isPostBeingCreated = true;
       if (images.length > 0) {
-        String userUid = me.uid; // RivalUser UID
-        String postId = await getPostUid(); // Get a new id for post
-        DocumentReference ref = firestore.collection('posts').doc(postId); // Create a reference to that post location
 
-        List<String> imageUrls = [];
-        List blurHashes = [];
-        List keywords = [
+        List<String> keywords = [
           me.username.toLowerCase()
         ]; // Add a few keywords to make the post searchable.
-
-        List lowerCaseTags = [];
+        
+        tags.addAll(_descriptionCtrl.text.replaceAll(new RegExp(RivalRegex.specialChars), '').replaceAll('\n', ' ').replaceAll('.', '').toLowerCase().split(' '));
         tags = tags.toSet().toList(); // Removes all duplicate values
-        tags.forEach((tag) {
-          lowerCaseTags.add(tag.trim().toLowerCase());
-          keywords.add(tag.trim().toLowerCase());
-        }); // Add each tag to keywords list for easy searching.
 
-        for (File image in images) {
-          var time = DateTime.now().toString();
-          //ImageProperties properties = await FlutterNativeImage.getImageProperties(image.path);
-          //File file = await FlutterNativeImage.compressImage(image.path, quality: 100, targetHeight: (properties.height * 800 / properties.width).round(), targetWidth: 800, percentage: 50);
-          // Makes the app slower
-          // Uint8List filePixels = file.readAsBytesSync();
-          // var blurhash = await BlurHash.encode(filePixels, 9, 9);
-          // print(blurhash);
-          // blurHashes.add(blurhash);
-          String imageUrl = await (await FirebaseStorage.instance.ref().child('posts').child("IMG-$postId-${time.replaceAll(new RegExp(r"\s+"), "")}").putFile(image).onComplete).ref.getDownloadURL();
-          imageUrls.add(imageUrl);
-          setState(() {
-            loadingState = loadingState + ".";
-          });
+        List<String> mentions = [];
+        for (String username in _descriptionCtrl.text.replaceAll(new RegExp(RivalRegex.specialChars), '').replaceAll('\n', ' ').toLowerCase().split(' ')) {
+          if (RegExp(RivalRegex.username).hasMatch(username)) mentions.add(username.replaceAll('@', ''));
         }
 
-        setState(() {
-          loadingState = 'Finishing up...';
-        });
-
-        var time = DateTime.now().toUtc().millisecondsSinceEpoch;
-
-        await analytics.logEvent(name: 'new_post');
-        await analytics.logEvent(name: 'number_of_images', parameters: {
-          'length': images.length
-        });
-
-        String shareableUrl = (await createDynamicURL(link: 'https://rival.photography/post/$postId', title: '@${me.username} | Rival | Post', description: '${_descriptionCtrl.text}\nA Post by @${me.username}')) ?? 'Post ID: $postId';
-
-        await ref.set({
-          'id': postId,
-          'ratio': ratio['width'] / ratio['height'],
-          'size': {
-            'width': ratio['width'],
-            'height': ratio['height']
-          },
-          'images': imageUrls,
-          'labels': labels,
-          'ocr': ocrText,
-          'people': people,
-          'blurhashes': blurHashes,
-          'subtitle': _subtitleCtrl.text,
-          'description': _descriptionCtrl.text,
-          'timestamp': time,
-          'keywords': keywords,
-          'tags': tags,
-          'showLikeCount': showLikeCount,
-          'likes': {},
-          'allowComments': allowComments,
-          'adult-rated': containsAdultContent,
-          'comments': {},
-          'edited': null,
-          'reach': {},
-          'shares': {},
-          'impressions': {},
-          'profile_visits': {},
-          'creator': userUid,
-          'user': me.reference,
-          'promoted': false,
-          'sponsor': sponsor?.reference,
-          'isProduct': isProduct,
-          'productUrl': productUrl,
-          'productTitle': productButtonTitle,
-          'geoPoint': geoPoint,
-          'locationPlaceholder': locationText,
-          'available': true,
-          'takenDown': false,
-          'shareableUrl': shareableUrl
-        },);
-
-        await me.update({
-          'posts': FieldValue.arrayUnion([ref])
+        Post postAfter = await post(
+          allowComments: allowComments,
+          btnTitle: productButtonTitle,
+          containsAdultContent: containsAdultContent,
+          description: _descriptionCtrl.text,
+          geoPoint: geoPoint,
+          images: images,
+          labels: labels,
+          location: locationText,
+          ocr: ocrText,
+          people: people,
+          showLikeCount: showLikeCount,
+          size: Size(ratio['width'], ratio['height']),
+          sponsor: sponsor,
+          subtitle: _subtitleCtrl.text,
+          keywords: keywords,
+          topic: topic,
+          mentions: mentions
+        );
+        
+        if (topic != null) await firestore.collection('rival').doc('topics').update({
+          topic: FieldValue.arrayUnion([postAfter.id])
         });
 
         // Add all tags to this week's top list
         DocumentSnapshot topTagsDoc = await firestore.collection('rival').doc('tags').get();
-        Map topTagsMap = topTagsDoc.data()[weekOfYear().toString()] ?? {};
+        Map topTagsMap = topTagsDoc.data()[RivalProvider.weekOfYear.toString()] ?? {};
         
-        for (String lcTag in lowerCaseTags) {
-          if (topTagsMap.containsKey(lcTag)) {
+        for (String tag in tags) {
+          if (topTagsMap.containsKey(tag)) {
             await topTagsDoc.reference.update({
-              '${weekOfYear()}.$lcTag': FieldValue.increment(1)
+              '${RivalProvider.weekOfYear}.$tag': FieldValue.increment(1)
             });
           } else {
             await topTagsDoc.reference.update({
-              '${weekOfYear()}.$lcTag': 1
+              '${RivalProvider.weekOfYear}.$tag': 1
             });
           }
         }
-
-        Post postAfter = await getPost(ref.id);
         
         // Add this post to our homescreen
         List<Post> timelineL = timeline.reversed.toList();
@@ -1086,8 +1039,6 @@ class _CreatePostState extends State<CreatePost> {
           myPostsL.add(postAfter);
           myPosts = myPostsL.reversed.toList();
         }
-
-        await me.reload();
 
         RivalProvider.vibrate();
 
@@ -1143,6 +1094,107 @@ class _CreatePostState extends State<CreatePost> {
       loadingState = null;
     });
 
+  }
+
+  Future<Post> post({
+    @required List<File> images,
+    @required String description,
+    @required String subtitle,
+    @required GeoPoint geoPoint,
+    @required String location,
+    @required bool allowComments,
+    @required bool containsAdultContent,
+    @required Size size,
+    @required List labels,
+    @required bool showLikeCount,
+    @required List<DocumentReference> people,
+    @required List<String> ocr,
+    @required String btnTitle,
+    @required RivalUser sponsor,
+    @required List<String> keywords,
+    @required String topic,
+    @required List<String> mentions
+  }) async {
+    Post post;
+
+    String postId = await getPostUid(); // Get a new id for post
+    DocumentReference ref = firestore.collection('posts').doc(postId); // Create a reference to that post location
+
+    List<String> imageUrls = [];
+    //List blurHashes = [];
+
+    for (File image in images) {
+      var time = DateTime.now().toString();
+      // Makes the app slower
+      // Uint8List filePixels = file.readAsBytesSync();
+      // var blurhash = await BlurHash.encode(filePixels, 9, 9);
+      // print(blurhash);
+      // blurHashes.add(blurhash);
+      String imageUrl = await (await FirebaseStorage.instance.ref().child('posts').child("IMG-$postId-${time.replaceAll(new RegExp(r"\s+"), "")}").putFile(image).onComplete).ref.getDownloadURL();
+      imageUrls.add(imageUrl);
+      setState(() {
+        loadingState = loadingState + ".";
+      });
+    }
+
+    setState(() {
+      loadingState = 'Finishing up...';
+    });
+
+    int timestamp = DateTime.now().toUtc().millisecondsSinceEpoch;
+
+    String shareableUrl = (await createDynamicURL(link: 'https://rival.photography/post/$postId', title: '@${me.username} | Rival | Post', description: '${_descriptionCtrl.text}\nA Post by @${me.username}')) ?? 'Post ID: $postId';
+
+    await ref.set({
+      'id': postId,
+      'ratio': size.aspectRatio,
+      'size': {
+        'width': size.width,
+        'height': size.height
+      },
+      'images': imageUrls,
+      'labels': labels,
+      'ocr': ocr,
+      'people': people,
+      //'blurhashes': blurHashes,
+      'subtitle': subtitle,
+      'description': description,
+      'timestamp': timestamp,
+      'keywords': keywords,
+      'tags': tags,
+      'mentions': mentions,
+      'showLikeCount': showLikeCount,
+      'likes': {},
+      'allowComments': allowComments,
+      'adult-rated': containsAdultContent,
+      'comments': {},
+      'edited': null,
+      'reach': {},
+      'shares': {},
+      'impressions': {},
+      'profile_visits': {},
+      'creator': me.uid,
+      'user': me.reference,
+      'promoted': false,
+      'sponsor': sponsor?.reference,
+      'isProduct': isProduct,
+      'productUrl': productUrl,
+      'productTitle': btnTitle,
+      'geoPoint': geoPoint,
+      'locationPlaceholder': location,
+      'available': true,
+      'takenDown': false,
+      'shareableUrl': shareableUrl,
+      'topic': topic
+    },);
+
+    await me.update({
+      'posts': FieldValue.arrayUnion([ref])
+    });
+
+    post = await getPost(ref.id);
+
+    return post;
   }
 
 }

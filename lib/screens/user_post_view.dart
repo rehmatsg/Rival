@@ -75,16 +75,16 @@ class _PostsByUserState extends State<PostsByUser> {
     });
     page += 1;
     int startIndex = (page - 1) * 10;
-    int endIndex = startIndex + 9;
+    int endIndex = startIndex + 10;
 
     if (refs.length >= startIndex) {
-      if (endIndex > refs.length) {
-        endIndex = refs.length - 1;
+      if (endIndex >= refs.length) {
+        endIndex = refs.length;
       }
       if (widget.isCurrentUser && myPosts.length >= endIndex) {
-        posts.addAll(myPosts.getRange(startIndex, endIndex + 1));
+        posts.addAll(myPosts.getRange(startIndex, endIndex));
       } else {
-        for (DocumentReference ref in refs.getRange(startIndex, endIndex + 1)) {
+        for (DocumentReference ref in refs.getRange(startIndex, endIndex)) {
           Post post;
           if (widget.isCurrentUser) {
             post = await Post.fetch(ref: ref);
@@ -162,14 +162,6 @@ class _PostsByUserState extends State<PostsByUser> {
                       icon: Icon(Icons.add_circle),
                     ),
                   ),
-                ] else ... [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    child: Text(
-                      'Open Explore tab to discover more posts',
-                      style: Theme.of(context).textTheme.caption
-                    ),
-                  )
                 ]
               ]
             )

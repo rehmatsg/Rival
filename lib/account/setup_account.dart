@@ -30,6 +30,7 @@ class _SetupAccountState extends State<SetupAccount> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(
         title: Text('Setup Account'),
       ),
@@ -79,12 +80,10 @@ class _SetupAccountState extends State<SetupAccount> {
                 onPressed: (me.dob == null) ? _addDOB : null
               ),
             ),
-            ListTile(
+            if (me.gender == null) ListTile(
               title: Text('Select Gender'),
               subtitle: Text('This information is kept private'),
-              trailing: (gender != null || me.gender != null)
-              ? null
-              : IconButton(
+              trailing: IconButton(
                 icon: Icon(Icons.keyboard_arrow_right),
                 onPressed: () async{
                   gender = await _addGender();
@@ -125,10 +124,12 @@ class _SetupAccountState extends State<SetupAccount> {
       firstDate: DateTime(1950, 1, 1),
       lastDate: DateTime.now()
     );
-    if (await me.addDateOfBith(date: dob)) {
-      await RivalProvider.showToast(text: 'Updated your Age');
-    } else {
-      _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text('You need to be atleast 12 years old to use Rival')));
+    if (dob != null) {
+      if (await me.addDateOfBith(date: dob)) {
+        await RivalProvider.showToast(text: 'Updated your Age');
+      } else {
+        _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text('You need to be atleast 12 years old to use Rival')));
+      }
     }
   }
 
@@ -149,7 +150,7 @@ class _SetupAccountState extends State<SetupAccount> {
       function: () async {
         await me.update({
           'displayName': displayName,
-          'bio': bio
+          'bio': bio,
         }, reload: true);
       },
       onComplete: () {

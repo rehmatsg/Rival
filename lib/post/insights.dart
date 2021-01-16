@@ -183,10 +183,10 @@ class PostInsights extends StatelessWidget {
                 ),
               ),
             ),
-            Divider(),
             ViewPost(
               post: post,
-            )
+            ),
+            Divider()
           ],
         ),
       ),

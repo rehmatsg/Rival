@@ -25,6 +25,8 @@ class Story {
     else if (story['type'] == "post") return StoryType.post;
     else return null;
   }
+  /// Font of text
+  String get font => story['font'] ?? 'Roboto';
   /// Get duration of VIDEO in seconds
   int get duration => story['duration'] ?? 10;
   Map get views => story['views'];

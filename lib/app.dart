@@ -22,7 +22,6 @@ export 'users.dart';
 export 'widgets/widgets.dart';
 
 // Screens
-export 'screens/activity.dart';
 export 'screens/blocked.dart';
 export 'screens/bookmarked_posts.dart';
 export 'screens/business_contact.dart';
@@ -38,8 +37,15 @@ export 'screens/my_liked_posts.dart';
 export 'screens/search.dart';
 export 'screens/security.dart';
 export 'screens/settings.dart';
-export 'screens/tagged_posts.dart';
 export 'screens/user_post_view.dart';
+export 'screens/my_partners.dart';
+export 'screens/sponsor.dart';
+export 'screens/add_sponsor.dart';
+export 'screens/partner_requests.dart';
+export 'screens/select_sponsor.dart';
+export 'screens/subscribe_to_topics.dart';
+export 'screens/business_intro.dart';
+export 'screens/creator_intro.dart';
 
 // Account Folder
 export 'account/account.dart';
@@ -61,3 +67,7 @@ export 'account/setup_account.dart';
 export 'account/signin.dart';
 export 'account/signup.dart';
 export 'account/username.dart';
+export 'account/tag_subscriptions.dart';
+
+// Creator Folder
+export 'creator/provider.dart';

@@ -39,10 +39,18 @@ class _BlockedUserTileState extends State<BlockedUserTile> {
 
   RivalUser user;
 
+  Future<RivalUser> future;
+
   Future<RivalUser> _futureGetUser() async {
     if (user != null) return user;
     user = await getUser(me.doc.data()['blocked'][widget.index].id);
     return user;
+  }
+
+  @override
+  void initState() {
+    future = _futureGetUser();
+    super.initState();
   }
   
   @override
@@ -53,7 +61,7 @@ class _BlockedUserTileState extends State<BlockedUserTile> {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<RivalUser>(
-      future: _futureGetUser(),
+      future: future,
       builder: (context, snapshot) {
         bool loaded = snapshot.connectionState == ConnectionState.done;
         return ListTile(

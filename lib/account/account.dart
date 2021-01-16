@@ -81,39 +81,8 @@ class _AccountState extends State<Account> {
               ],
               child: Text('${me.data['type'][0].toUpperCase()}${me.data['type'].substring(1)}'),
               onSelected: (value) {
-                if (value != me.data['type']) showDialog(
-                  context: context,
-                  child: AlertDialog(
-                    title: Text('Confirm'),
-                    content: Text('Are you sure you want to switch to $value account?'),
-                    actions: [
-                      FlatButton(
-                        child: Text('Ok'),
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          Loader.show(
-                            context,
-                            function: () async {
-                              await me.update({
-                                'type': value
-                              }, reload: true);
-                            },
-                            onComplete: () {
-                              RivalProvider.showToast(text: 'Switched to $value account');
-                              Navigator.of(context).pushAndRemoveUntil(RivalNavigator(page: Home()), (route) => false);
-                            }
-                          );
-                        },
-                      ),
-                      FlatButton(
-                        child: Text('Cancel'),
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                        },
-                      )
-                    ],
-                  )
-                );
+                if (value == 'business' && !me.isBusinessAccount) Navigator.of(context).push(RivalNavigator(page: BusinessIntro()));
+                else if (value == 'creator' && !me.isCreatorAccount) Navigator.of(context).push(RivalNavigator(page: CreatorIntro()));
               },
             ),
           ),

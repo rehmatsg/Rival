@@ -220,6 +220,14 @@ class Post {
   bool get takenDown => data['takenDown'] ?? false;
   bool get available => doc.exists ? (data['available'] ?? true) : false;
   String get shareableUrl => data['shareableUrl'] ?? '';
+  /// Get LABEL of this post
+  /// Label is created if something very important is to be conveyed to the people about this post
+  /// Generally negative statement
+  String get label => data['label'];
+  /// Get the topic of this post
+  /// NOT NULL SAFE
+  /// Return null if no topic is provided
+  String get topic => data['topic'];
   Stream<Post> get stream {
     return reference.snapshots().map((event) {
       return Post(doc: event, ad: ad, user: user, sponsor: sponsor);

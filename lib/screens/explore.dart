@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:e/screens/subscribe_to_topics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import 'package:intl/intl.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import '../app.dart';
 
@@ -162,6 +162,9 @@ class _NewPostsState extends State<NewPosts> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text('Explore'),
+      ),
       body: isLoading
       ? Center(
         child: Column(
@@ -177,7 +180,7 @@ class _NewPostsState extends State<NewPosts> {
           await _getTopPosts();
         },
         child: CustomScrollView(
-          cacheExtent: 99999,
+          cacheExtent: MediaQuery.of(context).size.height * 2,
           slivers: [
             SliverStaggeredGrid.countBuilder(
               crossAxisCount: 3,
@@ -314,12 +317,6 @@ class _TopTagsState extends State<TopTags> {
     );
   }
 
-}
-
-int weekOfYear() {
-  DateTime date = DateTime.now();
-  int dayOfYear = int.parse(DateFormat("D").format(date));
-  return ((dayOfYear - date.weekday + 10) / 7).floor();
 }
 
 
@@ -465,3 +462,194 @@ class _CustomPainter extends BoxPainter {
 }
 
 enum TabPosition { top, bottom }
+
+// ##################################################################### NEW ###################################################################
+
+List<Post> subscribedTopicsPosts = [];
+
+class Explore extends StatefulWidget {
+  @override
+  _ExploreState createState() => _ExploreState();
+}
+
+class _ExploreState extends State<Explore> {
+
+  int postsPerPage = 25;
+
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Explore'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.add_circle),
+            tooltip: 'View Topics',
+            onPressed: () {
+              Navigator.of(context).push(RivalNavigator(page: SubscribeToTopics()));
+            }
+          )
+        ],
+      ),
+      body: me.subscriptions.isNotEmpty
+      ? RefreshIndicator(
+        onRefresh: () async {
+          setState(() {
+            subscribedTopicsPosts.clear();
+            isLoading = true;
+          });
+        },
+        child: SingleChildScrollView(
+          primary: true,
+          child: Column(
+            children: [
+              PagedListView(
+                autoNextPage: true,
+                itemsPerPage: postsPerPage,
+                onFinish: 'That\'s it',
+                onNextPage: (startIndex, endIndex) async {
+                  return await _getPage(startIndex, endIndex);
+                },
+                loadingWidget: Center(
+                  child: Container(
+                    margin: EdgeInsets.symmetric(vertical: 20),
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation(
+                        MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black : Colors.white
+                      ),
+                    ),
+                  ),
+                ),
+                onLoadingEnd: (isFirstPage) {
+                  try {
+                    if (isFirstPage) setState(() {
+                      isLoading = false;
+                    });
+                  } catch (e) {
+                    isLoading = false;
+                  }
+                },
+              )
+            ],
+          ),
+        ),
+      )
+      : Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 15),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text('No Subscriptions', style: Theme.of(context).textTheme.headline5,),
+            Container(height: 10),
+            Text('You haven\'t subscribed to any topics. Subscribe to topics to find related posts.', style: Theme.of(context).textTheme.bodyText1),
+            Container(height: 15),
+            FlatButton(
+              child: Text('Find Topics'),
+              onPressed: () async {
+                await Navigator.of(context).push(RivalNavigator(page: SubscribeToTopics()));
+                setState(() { });
+              },
+              color: Colors.indigoAccent.withOpacity(0.2),
+              splashColor: Colors.indigoAccent.withOpacity(0.6),
+            )
+          ],
+        ),
+      )
+    );
+  }
+
+  Future<List<Widget>> _getPage(int startIndex, int endIndex) async {
+    List<Widget> widgets = [];
+    if (subscribedTopicsPosts.length > 0 && subscribedTopicsPosts.length < postsPerPage) {
+      // If there are less than noOfPostsOfATopic loaded for first page
+      // that means we don't have sufficient number of posts
+      // So we'll return only loaded posts
+      // for first page
+      subscribedTopicsPosts.forEach((p) {
+        widgets.add(ViewPost(
+          post: p,
+          whyThisPost: 'You are viewing this post because you have subscribed to ${p.topic} topic.',
+        ));
+      });
+    } else if (subscribedTopicsPosts.length >= startIndex && subscribedTopicsPosts.length >= endIndex) {
+      // Our list already contains this page
+      // So return it
+      List<Post> subscribedTopicsPostsL = subscribedTopicsPosts.getRange(startIndex, endIndex);
+      subscribedTopicsPostsL.forEach((p) {
+        widgets.add(ViewPost(
+          post: p,
+          whyThisPost: 'You are viewing this post because you have subscribed to ${p.topic} topic.',
+        ));
+      });
+    } else {
+      // if (allPostsFromAllTopics == null) allPostsFromAllTopics = await firestore.collection('rival').doc('topics').get();
+      List<Post> local = [];
+      int noOfTopics = me.subscriptions.length;
+      int noOfPostsOfATopic = (me.subscriptions.length / noOfTopics).floor();
+      for (String topic in me.subscriptions) {
+        // Get `noOfPostsOfATopic` no of posts related to this topic
+        local.addAll(await _getPostsForTopic(topic, noOfPostsOfATopic));
+      }
+      while (local.length < noOfPostsOfATopic) {
+        int missingPosts = local.length - noOfPostsOfATopic;
+        // For ex there are 3 posts less than noOfPostsOfATopic per page
+        // So, we'll get 3 posts for any random topic to complete the page
+        String topic = me.subscriptions.getRandom();
+        local.addAll(await _getPostsForTopic(topic, missingPosts));
+        // Now all posts are completed for a page
+      }
+      local.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      subscribedTopicsPosts.addAll(local);
+      local.forEach((post) {
+        widgets.add(ViewPost(
+          post: post,
+          whyThisPost: 'You are viewing this post because you have subscribed to ${post.topic} topic.',
+        ));
+      });
+    }
+    return widgets;
+  }
+
+  Future<List<Post>> _getPostsForTopic(String topic, int no) async {
+    List<Post> local = [];
+    Query query = firestore.collection('posts').where('topic', isEqualTo: topic).orderBy('timestamp', descending: true).limit(no);
+    int lastIndexOfPostOfTopic = subscribedTopicsPosts.lastIndexWhere((element) => element.topic == topic);
+    if (lastIndexOfPostOfTopic >= 0) {
+      query = query.startAfterDocument(subscribedTopicsPosts[lastIndexOfPostOfTopic].doc);
+    }
+    QuerySnapshot querySnapshot = await query.get();
+    for (DocumentSnapshot doc in querySnapshot.docs) {
+      Post post = await Post.fetch(doc: doc);
+      if (post.isMyPost || (post.user.private && post.user.isFollowing) || !post.user.private) local.add(post);
+    }
+    return local;
+  }
+
+  // This method is used to get posts by tag
+  // It is not yet used
+  // ignore: unused_element
+  Future<List<Post>> _getPostsForTag(String tag, int no) async {
+    tag = tag.replaceAll('#', '').replaceAll(RegExp(RivalRegex.specialChars), '');
+    List<Post> local = [];
+    Query query = firestore.collection('posts').where('tags', arrayContains: tag).orderBy('timestamp', descending: true).limit(no);
+    int lastIndexOfPostOfTopic = subscribedTopicsPosts.lastIndexWhere((element) => element.tags.contains('#$tag'));
+    if (lastIndexOfPostOfTopic >= 0) {
+      query = query.startAfterDocument(subscribedTopicsPosts[lastIndexOfPostOfTopic].doc);
+    }
+    QuerySnapshot querySnapshot = await query.get();
+    for (DocumentSnapshot doc in querySnapshot.docs) {
+      Post post = await Post.fetch(doc: doc);
+      if (post.isMyPost || (post.user.private && post.user.isFollowing) || !post.user.private) local.add(post);
+    }
+    return local;
+  }
+
+}

@@ -12,6 +12,12 @@ class _BusinessPageState extends State<BusinessPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Business Tools'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.help),
+            onPressed: () => Navigator.of(context).push(RivalNavigator(page: BusinessIntro()))
+          )
+        ],
       ),
       body: ListView(
         children: [
@@ -22,12 +28,17 @@ class _BusinessPageState extends State<BusinessPage> {
             onTap: () => Navigator.of(context).push(RivalNavigator(page: AccountInsights())),
           ),
           ListTile(
+            title: const Text('Sponsors'),
+            subtitle: Text('View and manage sponsors'),
+            onTap: () => Navigator.of(context).push(RivalNavigator(page: ManageSponsor())),
+          ),
+          ListTile(
             title: const Text('Contact'),
             subtitle: const Text('Choose contact options for your profile'),
             onTap: () => Navigator.of(context).push(RivalNavigator(page: BusinessContact())),
           ),
           ListTile(
-            title: Text('Setup Shopping'),
+            title: const Text('Setup Shopping'),
             subtitle: Text('Create Posts to sell your product'),
             onTap: () => Navigator.of(context).push(RivalNavigator(page: EmailPage())),
           ),

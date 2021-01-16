@@ -340,12 +340,6 @@ class _CreatePasswordState extends State<CreatePassword> {
             'followers': [],
             'following': [],
             'bookmarks': [],
-            'activity': [
-              {
-                'type': 'welcome',
-                'timestamp': result.user.metadata.creationTime.millisecondsSinceEpoch,
-              }
-            ],
             'blocked': [],
             'posts': [],
             'username': null,
@@ -362,10 +356,11 @@ class _CreatePasswordState extends State<CreatePassword> {
             'follow_requests': {},
             'story': {},
             'type': 'personal',
-            'visits': {},
+            'visits': [],
             'showContactCall': false,
             'showContactEmail': false,
             'tagsSubscribed': [],
+            'subscriptions': []
           });
           await analytics.logSignUp(signUpMethod: 'email');
           //await CurrentUser().init();

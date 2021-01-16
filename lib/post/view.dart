@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:e/screens/subscribe_to_topics.dart';
 import 'package:expandable/expandable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -924,7 +925,9 @@ class _PostUserState extends State<PostUser> {
             padding: EdgeInsets.symmetric(vertical: 1, horizontal: 4),
             child: Text(
               'Ad',
-              style: Theme.of(context).textTheme.caption,
+              style: Theme.of(context).textTheme.caption.copyWith(
+                color: Colors.black
+              ),
             ),
           ),
         ) : null,
@@ -1331,8 +1334,11 @@ class ViewPost extends StatefulWidget {
   final Post post;
   /// If [true], border will be automatically assigned to both top and end
   final bool isSingleWidget;
+  /// Provide this string to inform the user why he/she is getting this post in their timeline or explore
+  /// Leave empty to hide this option
+  final String whyThisPost;
 
-  const ViewPost({Key key, @required this.post, this.isSingleWidget = false}) : super(key: key);
+  const ViewPost({Key key, @required this.post, this.isSingleWidget = false, this.whyThisPost}) : super(key: key);
 
   @override
   _ViewPostState createState() => _ViewPostState();
@@ -1549,7 +1555,7 @@ class _ViewPostState extends State<ViewPost> {
                   ),
                 ),
                 if (post.description != null && post.description.trim() != "") Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                  padding: EdgeInsets.only(left: 10, right: 10, top: 10,),
                   child: ExpandablePanel(
                     controller: _expandableController,
                     collapsed: (post.description.toString().length > 40)
@@ -1577,7 +1583,7 @@ class _ViewPostState extends State<ViewPost> {
                   ),
                 ),
                 if (post.isProduct || post.sponsor != null) Padding(
-                  padding: EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                  padding: EdgeInsets.only(top: 5, left: 10, right: 10),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -1681,7 +1687,7 @@ class _ViewPostState extends State<ViewPost> {
                                     child: Text('Edit'),
                                     value: 'edit',
                                   ),
-                                  PopupMenuItem(
+                                  if (me.isBusinessAccount || me.isCreatorAccount) PopupMenuItem(
                                     child: Text('View Insights'),
                                     value: 'insights',
                                   ),
@@ -1691,7 +1697,7 @@ class _ViewPostState extends State<ViewPost> {
                                   value: 'visitProfile',
                                 ),
                                 PopupMenuItem(
-                                  child: Text('Copy Post URL'),
+                                  child: Text('Copy URL'),
                                   value: 'copyUrl',
                                 ),
                                 if (post.userId != me.uid) PopupMenuItem(
@@ -1703,13 +1709,17 @@ class _ViewPostState extends State<ViewPost> {
                                   value: 'reportAd',
                                 ),
                                 PopupMenuItem(
-                                  child: Text('Add to My Story'),
+                                  child: Text('Add to Story'),
                                   value: 'addAsStory',
                                 ),
                                 if (post.userId != me.uid && post.user != null) PopupMenuItem(
-                                  child: Text('Block ${post.user.username}'),
+                                  child: Text('${post.user.isBlocked ? 'Unblock' : 'Block'} ${post.user.username}'),
                                   value: 'block',
                                 ),
+                                if (widget.whyThisPost != null) PopupMenuItem(
+                                  child: Text('Why this post?'),
+                                  value: 'whyThisPost'
+                                )
                               ],
                               onSelected: (value) async {
                                 switch (value) {
@@ -1794,6 +1804,21 @@ class _ViewPostState extends State<ViewPost> {
                                   case 'block':
                                     await post.user.blockUnblock();
                                     break;
+                                  case 'whyThisPost':
+                                    showDialog(
+                                      context: context,
+                                      child: AlertDialog(
+                                        title: Text('Why this post?'),
+                                        content: Text(widget.whyThisPost),
+                                        actions: [
+                                          FlatButton(
+                                            onPressed: () => Navigator.of(context).pop(),
+                                            child: Text('Ok')
+                                          )
+                                        ],
+                                      )
+                                    );
+                                    break;
                                   default:
                                 }
                               },
@@ -1815,7 +1840,25 @@ class _ViewPostState extends State<ViewPost> {
                       ),
                     ],
                   ),
-                )
+                ),
+                if (post.label != null) Padding(
+                  padding: EdgeInsets.only(bottom: 5,),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.yellow[400],
+                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+                    width: double.infinity,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        Icon(Icons.warning, color: Colors.black,),
+                        Container(width: 5),
+                        Text('This post has been marked as unofficial', style: Theme.of(context).textTheme.bodyText2.copyWith(color: Colors.black))
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -1825,17 +1868,18 @@ class _ViewPostState extends State<ViewPost> {
   }
 
   Future<bool> _like(bool liked) async {
+    // Don't use await because it will make the animation (Like) useless.
     if (liked) {
-      await post.reference.update({
+      post.reference.update({
         'likes.${me.user.uid}': FieldValue.delete()
       });
-      await post.refresh();
+      post.refresh();
       return !liked;
     } else {
-      await post.reference.update({
+      post.reference.update({
         'likes.${me.user.uid}': new DateTime.now().millisecondsSinceEpoch
       });
-      await post.refresh();
+      post.refresh();
       return !liked;
     }
   }
@@ -1856,12 +1900,9 @@ class SinglePostView extends StatefulWidget {
 class _SinglePostViewState extends State<SinglePostView> {
 
   Post post;
-
   bool isLoading = false;
 
   Key key;
-
-  final PreloadPageController _pageController = PreloadPageController(viewportFraction: 1,);
 
   Future<void> _getPostFromId() async {
     setState(() {
@@ -1871,14 +1912,12 @@ class _SinglePostViewState extends State<SinglePostView> {
     setState(() {
       isLoading = false;
     });
-    _recordPostImpression();
   }
 
   @override
   void initState() {
     if (widget.post != null) {
       post = widget.post;
-      _recordPostImpression();
     } else {
       _getPostFromId();
     }
@@ -1890,493 +1929,91 @@ class _SinglePostViewState extends State<SinglePostView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: isLoading ? null : Text('@${post.user.username}'),
+        title: isLoading ? Text('Post') : Text('@${post.user.username}'),
       ),
-      body: _build(context),
+      body: isLoading
+      ? Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Center(
+            child: CircularProgressIndicator(),
+          )
+        ],
+      )
+      : ViewPost(
+        post: post,
+        isSingleWidget: true,
+      ),
     );
   }
 
-  Widget _build(BuildContext context) {
-    if (isLoading) {
-      return Container();
-    } else if (post == null || (!post.available)) { // Post is not available due to some reason
-      return InfoBanner(
-        leadingIcon: Icons.error,
-        content: Text('Post Unavailable'),
-        actions: [
-          FlatButton(
-            child: Text('Learn More'),
-            onPressed: () async {
-              await launch('https://rival.photography/post/unavailable');
-            },
-          )
-        ],
-      );
-    } else if (post.user == null) {
-      return InfoBanner(
-        leadingIcon: Icons.error,
-        content: Text('Failed to load this post. ERR-LD-USR'),
-        actions: [
-          FlatButton(
-            child: Text('Learn More'),
-            onPressed: () async {
-              await launch('https://rival.photography/post/err-ld-usr');
-            },
-          )
-        ],
-      );
-    } else if (post.takenDown) { // Post has been taken down by Rival
-      return InfoBanner(
-        leadingIcon: Icons.warning,
-        content: Text('This post has been taken down by Rival because it does not comply by our policies'),
-        actions: [
-          FlatButton(
-            child: Text('Privacy Policy'),
-            onPressed: () async {
-              await launch('https://rival.photography/privacy-policy');
-            },
-          )
-        ],
-      );
-    } else if (!post.isMyPost && post.user.private && !post.user.isFollowing) { // User has PRIVATE account and I'm not following
-      return InfoBanner(
-        leadingIcon: Icons.warning,
-        content: Text('You cannot view this post because @${post.user.username} has a private account. Follow @${post.user.username} to view this post'),
-        actions: [
-          FlatButton(
-            child: Text(post.user.followUnfollow),
-            onPressed: () async {
-              await post.user.followUnfollowRequest();
-              setState(() { });
-            },
-          )
-        ],
-      );
-    } else if (!post.isMyPost && post.user.amIBlocked) { // User has blocked me
-      return InfoBanner(
-        leadingIcon: Icons.warning,
-        content: Text('You cannot view this post'),
-        actions: [
-          FlatButton(
-            child: Text('Learn More'),
-            onPressed: () async {
-              await launch('https://rival.photography/post/unavailable');
-            },
-          )
-        ],
-      );
-    } else if (!post.isMyPost && post.user.isBlocked) { // I have blocked the user
-      return InfoBanner(
-        leadingIcon: Icons.warning,
-        content: Text('This post is hidden because you have blocked @${post.user.username}. Unblock to view their posts'),
-        actions: [
-          FlatButton(
-            child: Text('Unblock'),
-            onPressed: () async {
-              await post.user.blockUnblock();
-            },
-          )
-        ],
-      );
-    } else if (post.adultRated && me.age < 18) { // Age Restricted Post
-      return InfoBanner(
-        leadingIcon: Icons.warning,
-        content: Text('This post is age restricted'),
-        actions: [
-          FlatButton(
-            child: Text('Privacy Policy'),
-            onPressed: () async {
-              await launch('https://rival.photography/post/age-restricted');
-            },
-          )
-        ],
-      );
-    } else { // All Good
-      return ListView(
-        children: [
-          if (post.isMyPost) PostUser(post: post, isCurrentUser: true,)
-          else PostUser(post: post, user: post.user, isCurrentUser: false,),
-          Container(
-            padding: EdgeInsets.only(bottom: 0),
-            decoration: BoxDecoration(
-              border: Border.symmetric(horizontal: BorderSide(color: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.grey[200] : Colors.white10, width: 0.4))
-            ),
-            child: SizedBox(
-              width: MediaQuery.of(context).size.width,
-              height: (MediaQuery.of(context).size.width / post.ratio > (MediaQuery.of(context).size.height * 0.75)) ? MediaQuery.of(context).size.height * 0.55 : MediaQuery.of(context).size.width / post.ratio,
-              child: Stack(
-                children: [
-                  PreloadPageView.builder(
-                    controller: _pageController,
-                    preloadPagesCount: 10,
-                    itemCount: post.images.length,
-                    itemBuilder: (context, index) => Container(
-                      child: OctoImage(
-                        image: CachedNetworkImageProvider(post.images[index]),
-                        progressIndicatorBuilder: (context, progress) {
-                          double value;
-                          if (progress != null && progress.expectedTotalBytes != null) {
-                            value = progress.cumulativeBytesLoaded / progress.expectedTotalBytes;
-                          }
-                          return Container(
-                            width: 50,
-                            height: 50,
-                            child: CircularProgressIndicator(
-                              value: value,
-                              valueColor: new AlwaysStoppedAnimation<Color>(MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black : Colors.white),
-                              strokeWidth: 2,
-                            ),
-                          );
-                        }
-                      ),
-                    ),
-                  ),
-                  if (post.images.length > 1) Align(
-                    alignment: Alignment.bottomRight,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-                      child: Container(
-                        child: PageNotifier(controller: _pageController, pages: post.images.length,),
-                      ),
-                    ),
-                  )
-                ],
+}
+
+class PostsByTopic extends StatefulWidget {
+
+  final String topic;
+
+  PostsByTopic({Key key, @required this.topic}) : super(key: key);
+
+  @override
+  _PostsByTopicState createState() => _PostsByTopicState();
+}
+
+class _PostsByTopicState extends State<PostsByTopic> {
+
+  List<Post> loaded = [];
+  int postsPerPage = 10;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Posts'),
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            ListTile(
+              title: Text(widget.topic),
+              trailing: SubscribedTopicsBtn(
+                topic: widget.topic,
               ),
             ),
-          ),
-          if (post.isProduct || post.sponsor != null) Padding(
-            padding: EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (post.isProduct) ... [
-                      Icon(Icons.shopping_bag),
-                      Container(width: 5,),
-                    ],
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (post.isProduct) Text('Product', style: Theme.of(context).textTheme.button,),
-                        if (post.sponsor != null) Text(
-                          'Sponsored by @${post.sponsor.username}',
-                          style: Theme.of(context).textTheme.caption,
-                        ),
-                      ],
-                    )
-                  ],
-                ),
-                if (post.isProduct && post.productUrl != null) FlatButton(
-                  color: Colors.indigoAccent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(10))
-                  ),
-                  child: Text(
-                    post.productTitle,
-                    style: TextStyle(color: Colors.white, fontFamily: RivalFonts.feature),
-                  ),
-                  onPressed: () async {
-                    if (await canLaunch(post.productUrl)) {
-                      await launch(post.productUrl);
-                    } else {
-                      await RivalProvider.showToast(text: 'Could not launch URL');
-                    }
-                  },
-                ),
-              ],
-            ),
-          ),
-          if (post.description != null && post.description.trim() != "") Padding(
-            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            child: TextParser(
-              text: post.description,
-              textStyle: Theme.of(context).textTheme.bodyText2,
-              matchedWordStyle: TextStyle(fontWeight: FontWeight.bold),
-              ifTag: (tag) { },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    GestureDetector(
-                      onLongPress: (post.showLikeCount || post.isMyPost) ? () => Navigator.of(context).push(RivalNavigator(page: PostLikes(post: post,), )) : null,
-                      child: LikeButton(
-                        isLiked: post.isLiked,
-                        likeCount: post.likes.length,
-                        countBuilder: (likeCount, isLiked, text) {
-                          if ((post.showLikeCount || post.isMyPost) && post.likes.length > 0) return Text(likeCount.toString(), style: Theme.of(context).textTheme.button.copyWith(
-                            color: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.grey[700] : Colors.white
-                          ),);
-                          else return Container();
-                        },
-                        bubblesColor: BubblesColor(dotPrimaryColor: Colors.indigo, dotSecondaryColor: Colors.redAccent),
-                        onTap: (isLiked) {
-                          return _like(isLiked);
-                        },
-                      ),
-                    ),
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      visualDensity: VisualDensity.compact,
-                      onPressed: () async {
-                        // Share
-                        await Share.share('${post.description}. View Post on Rival: ${post.shareableUrl}');
-                        if (post.userId != me.uid && !post.shares.containsKey(me.uid)) await post.reference .update({
-                          'shares.${me.uid}': new DateTime.now().millisecondsSinceEpoch
-                        });
-                      },
-                      tooltip: 'Share',
-                      icon: Icon(FontAwesome.share, color: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.grey[500] : Colors.grey[400]),
-                    ),
-                    if (post.allowComments) IconButton(
-                      padding: EdgeInsets.zero,
-                      visualDensity: VisualDensity.compact,
-                      icon: Icon(FontAwesome.comment, color: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.grey[500] : Colors.grey[400]),
-                      tooltip: 'Comment',
-                      onPressed: () => Navigator.of(context).push(RivalNavigator(page: PostComments(post: post,)))
-                    )
-                  ],
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TaggedPeople(post: post,),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 5),
-                      child: PopupMenuButton(
-                        child: Icon(Icons.more_vert),
-                        itemBuilder: (context) => <PopupMenuEntry<dynamic>>[
-                          if (post.userId == me.uid) ... [
-                            PopupMenuItem(
-                              child: Text('Edit'),
-                              value: 'edit',
-                            ),
-                            PopupMenuItem(
-                              child: Text('View Insights'),
-                              value: 'insights',
-                            ),
-                          ],
-                          if (post.userId != me.uid && post.user != null) PopupMenuItem(
-                            child: Text('View Profile'),
-                            value: 'visitProfile',
-                          ),
-                          PopupMenuItem(
-                            child: Text('Copy Post URL'),
-                            value: 'copyUrl',
-                          ),
-                          if (post.userId != me.uid) PopupMenuItem(
-                            child: Text('Report Post'),
-                            value: 'report',
-                          ),
-                          if (post.userId != me.uid && post.isPromoted) PopupMenuItem(
-                            child: Text('Report Ad'),
-                            value: 'reportAd',
-                          ),
-                          PopupMenuItem(
-                            child: Text('Add to My Story'),
-                            value: 'addAsStory',
-                          ),
-                          if (post.userId != me.uid && post.user != null) PopupMenuItem(
-                            child: Text('Block ${post.user.username}'),
-                            value: 'block',
-                          ),
-                        ],
-                        onSelected: (value) async {
-                          switch (value) {
-                            case 'edit':
-                              RivalProvider.vibrate();
-                              if (RivalRemoteConfig.allowEditPost) {
-                                Navigator.of(context).push(RivalNavigator(page: EditPost(post: post), ));
-                              } else {
-                                showDialog(
-                                  context: context,
-                                  child: AlertDialog(
-                                    title: Text('Edit Post Disabled'),
-                                    content: Text('Post editing has been disabled for a limited time. Please try again later'),
-                                    actions: [
-                                      FlatButton(
-                                        onPressed: () => Navigator.of(context).pop(),
-                                        child: Text('OK')
-                                      )
-                                    ],
-                                  )
-                                );
-                              }
-                              break;
-                            case 'insights':
-                              RivalProvider.vibrate();
-                              Navigator.of(context).push(RivalNavigator(page: PostInsights(post: post), ));
-                              break;
-                            case 'visitProfile':
-                              post.user.navigateToProfile(context);
-                              break;
-                            case 'copyUrl':
-                              await Clipboard.setData(ClipboardData(text: post.shareableUrl));
-                              RivalProvider.showToast(text: 'Copied to Clipboard');
-                              break;
-                            case 'addAsStory':
-                              await post.shareAsStory();
-                              break;
-                            case 'report':
-                              showDialog(
-                                context: context,
-                                child: AlertDialog(
-                                  title: Text('Report'),
-                                  content: Text('Do you want to report this post?'),
-                                  actions: [
-                                    FlatButton(
-                                      onPressed: () async {
-                                        Navigator.of(context).pop();
-                                        await post.report();
-                                      },
-                                      child: Text('Report')
-                                    ),
-                                    FlatButton(
-                                      onPressed: () => Navigator.of(context).pop(),
-                                      child: Text('Cancel')
-                                    )
-                                  ],
-                                )
-                              );
-                              break;
-                            case 'reportAd':
-                              showDialog(
-                                context: context,
-                                child: AlertDialog(
-                                  title: Text('Report Ad'),
-                                  content: Text('Do you want to report this Ad?'),
-                                  actions: [
-                                    FlatButton(
-                                      onPressed: () async {
-                                        Navigator.of(context).pop();
-                                        await post.reportAd();
-                                      },
-                                      child: Text('Report')
-                                    ),
-                                    FlatButton(
-                                      onPressed: () => Navigator.of(context).pop(),
-                                      child: Text('Cancel')
-                                    )
-                                  ],
-                                )
-                              );
-                              break;
-                            case 'block':
-                              await post.user.blockUnblock();
-                              break;
-                            default:
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.only(left: 10, right: 10, bottom: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                Text(
-                  '${getTimeAgo(new DateTime.fromMillisecondsSinceEpoch(post.timestamp))} • ${post.user.username}',
-                  style: Theme.of(context).textTheme.caption,
-                ),
-              ],
-            ),
-          ),
-          if (post.tags.isNotEmpty) Padding(
-            padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
-            child: Wrap(
-              spacing: 5,
-              children: List.generate(
-                post.tags.length,
-                (index) {
-                  return GestureDetector(
-                    onTap: () => Navigator.of(context).push(RivalNavigator(page: PostsByTag(tag: post.tags[index],))),
-                    child: Chip(
-                      label: Text(
-                        '#${post.tags[index]}',
-                        style: TextStyle(
-                          color: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black : Colors.white
-                        ),
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(10))
-                      ),
-                      backgroundColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.grey[200] : Colors.grey[900]
-                    ),
-                  );
-                }
-              )
-            ),
-          )
-        ],
-      );
-    }
+            PagedListView(
+              autoNextPage: true,
+              itemsPerPage: postsPerPage,
+              loadingWidget: Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: CircularProgressIndicator(),
+              ),
+              onFinish: 'That\'s it',
+              onNextPage: _getNextPage,
+            )
+          ],
+        ),
+      ),
+    );
   }
 
-  Future<bool> _like(bool liked) async {
-    if (liked) {
-      await post.reference.update({
-        'likes.${me.user.uid}': FieldValue.delete()
-      });
-      await post.refresh();
-      return !liked;
-    } else {
-      await post.reference.update({
-        'likes.${me.user.uid}': new DateTime.now().millisecondsSinceEpoch
-      });
-      await post.refresh();
-      return !liked;
+  Future<List<Widget>> _getNextPage(int start, int end) async {
+    List<Widget> widgets = [];
+    List<Post> local = [];
+    Query query = firestore.collection('posts').where('topic', isEqualTo: widget.topic).limit(postsPerPage).orderBy('timestamp', descending: true);
+    if (loaded.isNotEmpty) {
+      query = query.startAfterDocument(loaded.last.doc);
     }
-  }
-
-  Future<void> _recordPostImpression() async {
-    if (!post.isPromoted) {
-      // Got an impression for (Timeline, Profile Post, Trending, Explore)
-      if(post.impressions[me.uid] == null && post.userId != me.uid) {
-        await analytics.logEvent(name: 'new_impression', parameters: {
-          me.uid: new DateTime.now().millisecondsSinceEpoch
-        });
-        post.reference.update({
-          'impressions.${me.uid}': new DateTime.now().millisecondsSinceEpoch
-        });
-        post.refresh();
-      }
-      if (post.userId != me.uid && post.labels.isNotEmpty) {
-        for (String label in post.labels) {
-          if (me.interests.containsKey(label.toLowerCase())) {
-            await me.update({
-              'interests.${label.toLowerCase()}': FieldValue.increment(1)
-            });
-          } else {
-            await me.update({
-              'interests.${label.toLowerCase()}': 0
-            });
-          }
-        }
-      }
-    } else if (post.isPromoted) {
-      // Got an impression for AD
-      if(post.adImpressions[me.uid] == null && post.userId != me.uid) {
-        await analytics.logEvent(name: 'new_ad_impression', parameters: {
-          me.uid: new DateTime.now().millisecondsSinceEpoch
-        });
-        post.adRef.update({
-          'impressions.${me.uid}': new DateTime.now().millisecondsSinceEpoch
-        });
-        post.refresh();
-      }
+    QuerySnapshot querySnapshot = await query.get();
+    for (DocumentSnapshot doc in querySnapshot.docs) {
+      Post post = await Post.fetch(doc: doc);
+      if (post.isMyPost || (post.user.private && post.user.isFollowing) || !post.user.private) local.add(post);
     }
+    loaded.addAll(local);
+    for (Post post in local) {
+      widgets.add(ViewPost(
+        post: post,
+      ));
+    }
+    return widgets;
   }
 
 }

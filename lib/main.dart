@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:animations/animations.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -10,6 +11,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_native_admob/native_admob_options.dart';
+import 'package:image_cropper/image_cropper.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:octo_image/octo_image.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -52,7 +55,7 @@ class _RivalState extends State<Rival> {
       } else if (shortcutType == "account") {
         initialRoute = Account();
       } else if (shortcutType == "explore") {
-        initialRoute = ExplorePage();
+        initialRoute = Explore();
       }
     });
     // quickActions.setShortcutItems(<ShortcutItem>[
@@ -868,11 +871,10 @@ class _HomeState extends State<Home> {
     String lastPath = deepLink.pathSegments.last; // y6F3vJ
     print('$type/$lastPath'); // posts/y6F3vJ
     if (type == 'profile') {
-      RivalProvider.showToast(text: 'Loading $lastPath Profile ...');
-      RivalUser user = await RivalProvider.getUserByUsername(lastPath.replaceAll('@', ''));
-      if (user != null && user.uid != me.uid) {
-        Navigator.of(context).push(RivalNavigator(page: ProfilePage(user: user,),));
-      } else if (user != null && user.uid == me.uid) {
+      String username = lastPath.replaceAll('@', '');
+      if (username != me.username) {
+        Navigator.of(context).push(RivalNavigator(page: ProfilePage(username: username,),));
+      } else if (username != me.username) {
         Navigator.of(context).push(RivalNavigator(page: ProfilePage(isCurrentUser: true,),));
       }
     } else if (type == 'post') {
@@ -905,7 +907,7 @@ class _HomeState extends State<Home> {
               ListTile(
                 title: Text('Create Story'),
                 trailing: Icon(Icons.keyboard_arrow_right),
-                onTap: () => Navigator.of(context).push(RivalNavigator(page: CreateStory(sharedMediaFile: sharedMediaFiles.first,),)),
+                onTap: () => Navigator.of(context).push(RivalNavigator(page: CreateImageStory(image: File(sharedMediaFiles.first.path),),)),
               ),
               ListTile(
                 title: Text('Create Post'),
@@ -917,7 +919,7 @@ class _HomeState extends State<Home> {
               ListTile(
                 title: Text('Create Story'),
                 trailing: Icon(Icons.keyboard_arrow_right),
-                onTap: () => Navigator.of(context).push(RivalNavigator(page: CreateStory(sharedMediaFile: sharedMediaFiles.first,),)),
+                onTap: () => Navigator.of(context).push(RivalNavigator(page: CreateImageStory(image: File(sharedMediaFiles.first.path),),)),
               )
             ] else ... [
               ListTile(
@@ -984,6 +986,7 @@ class _HomeState extends State<Home> {
         },
         child: RefreshIndicator(
           backgroundColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.grey[100] : Colors.grey[900],
+          onRefresh: refresh,
           child: CustomScrollView(
             cacheExtent: MediaQuery.of(context).size.height * 2, // Caches pixels of current context and two pages above and below
             controller: scrollController,
@@ -1042,7 +1045,7 @@ class _HomeState extends State<Home> {
                     icon: Icon(Icons.explore),
                     tooltip: 'Explore',
                     onPressed: () async {
-                      Navigator.of(context).push(RivalNavigator(page: ExplorePage(),));
+                      Navigator.of(context).push(RivalNavigator(page: Explore(),));
                     }
                   ),
                   Padding(
@@ -1106,11 +1109,30 @@ class _HomeState extends State<Home> {
                       ]
                     ]
                   ),
-                )
-              ]
+                ),
+                if (timeline != null && timeline.isEmpty) ... [
+                  Container(
+                    width: double.infinity,
+                    height: MediaQuery.of(context).size.height / 3,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('Nothing to show in timeline', style: Theme.of(context).textTheme.caption),
+                          if (me.following.isEmpty) Text('Follow someone to see their posts in your timeline', style: Theme.of(context).textTheme.caption),
+                          IconButton(
+                            icon: Icon(Icons.refresh),
+                            tooltip: 'Refresh',
+                            onPressed: refresh,
+                          )
+                        ],
+                      ),
+                    ),
+                  )
+                ]
+              ],
             ],
           ),
-          onRefresh: reload
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -1142,21 +1164,35 @@ class _HomeState extends State<Home> {
             cacheExtent: 9999,
             itemBuilder: (context, index) => isStoriesLoading
             ? Padding(
-              padding: EdgeInsets.only(right: 4, left: (index == 0) ? 60 : 4),
+              padding: EdgeInsets.only(right: 4, left: (index == 0) ? 50 : 4),
               child: Column(
                 children: [
                   Shimmer.fromColors(
                     child: Container(
-                      decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.all(Radius.circular(20))),
+                      decoration: BoxDecoration(
+                        color: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.grey[200] : Colors.grey[900],
+                        borderRadius: BorderRadius.all(Radius.circular(20))
+                      ),
                       height: 60,
                       width: 60
                     ),
-                    baseColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black12 : Colors.white10,
-                    highlightColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black12 : Colors.white12
+                    baseColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.grey[200] : Colors.grey[900],
+                    highlightColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.grey[200] : Colors.grey[900]
                   ),
                   Padding(
                     padding: const EdgeInsets.only(top: 5,),
-                    child: Shimmer.fromColors(child: Container(decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.all(Radius.circular(3))), height: 14, width: 60), baseColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black12 : Colors.white10, highlightColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black26 : Colors.white12),
+                    child: Shimmer.fromColors(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.grey[200] : Colors.grey[900],
+                          borderRadius: BorderRadius.all(Radius.circular(3))
+                        ),
+                        height: 14,
+                        width: 60
+                      ),
+                      baseColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.grey[200] : Colors.grey[900],
+                      highlightColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.grey[200] : Colors.grey[900]
+                    ),
                   )
                 ],
               ),
@@ -1164,6 +1200,39 @@ class _HomeState extends State<Home> {
             : storyItems[index]
           ),
         ),
+      ),
+    );
+  }
+
+  void showCreateStoryDialog() {
+    showGeneralDialog(
+      context: context,
+      pageBuilder: (context, animation, secondaryAnimation) => AlertDialog(
+        title: Text('Create Story'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(Icons.image),
+              title: Text('Image'),
+              dense: true,
+              visualDensity: VisualDensity.compact,
+            ),
+            ListTile(
+              leading: Icon(Icons.text_fields),
+              title: Text('Text'),
+              onTap: () => Navigator.of(context).push(RivalNavigator(page: CreateTextStory())),
+              dense: true,
+              visualDensity: VisualDensity.compact,
+            )
+          ],
+        ),
+        actions: [
+          FlatButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Cancel')
+          )
+        ],
       ),
     );
   }
@@ -1214,6 +1283,10 @@ class _HomeState extends State<Home> {
         ),
       ]
     ));
+    if (RivalRemoteConfig.showGoogleAds) {
+      if (widgets.length >= 1) widgets.insert(1, GoogleAd(controller: adCtrl,));
+      if (widgets.length >= 10) widgets.insert(10, GoogleAd(controller: adCtrl,));
+    }
     return SliverList(
       delegate: SliverChildBuilderDelegate(
         (BuildContext context, int index) => widgets[index],
@@ -1232,37 +1305,68 @@ class _HomeState extends State<Home> {
     storyItems = [];
 
     if (RivalRemoteConfig.allowNewStory) {
-      storyItems.add(Padding(
-        padding: const EdgeInsets.only(right: 5, left: 5),
-        child: Column(
-          children: [
-            Tooltip(
-              message: 'Create Story',
-              child: GestureDetector(
-                onTap: () => Navigator.of(context).push(RivalNavigator(page: CreateStory(),)),
-                child: Container(
-                  height: 84,
-                  width: 50,
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          height: 30,
-                          width: 30,
-                          child: Center(child: Icon(Icons.add, color: Colors.white,)),
-                          decoration: BoxDecoration(
-                            color: Colors.indigoAccent,
-                            borderRadius: BorderRadius.all(Radius.circular(30))
-                          ),
+      storyItems.add(Container(
+        height: 84,
+        width: 50,
+        child: Padding(
+          padding: const EdgeInsets.only(right: 5, left: 5),
+          child: Center(
+            child: Container(
+              width: 30,
+              height: 30,
+              child: PopupMenuButton(
+                tooltip: 'Create Story',
+                itemBuilder: (context) => <PopupMenuEntry>[
+                  PopupMenuItem(
+                    child: Text('Image'),
+                    value: 'image',
+                  ),
+                  PopupMenuDivider(),
+                  PopupMenuItem(
+                    child: Text('Text'),
+                    value: 'text',
+                  ),
+                ],
+                onSelected: (value) async {
+                  switch (value) {
+                    case 'image':
+                      PickedFile pickedFile = await ImagePicker().getImage(source: ImageSource.gallery);
+                      if (pickedFile != null) {
+                        File image = await  ImageCropper.cropImage(
+                          sourcePath: pickedFile.path,
+                          androidUiSettings: AndroidUiSettings(
+                            toolbarTitle: 'Crop',
+                            toolbarColor: Colors.indigoAccent
+                          )
+                        );
+                        if (image != null) Navigator.of(context).push(RivalNavigator(page: CreateImageStory(image: image,)));
+                      }
+                      break;
+                    case 'text':
+                      Navigator.of(context).push(RivalNavigator(page: CreateTextStory()));
+                      break;
+                    default:
+                  }
+                },
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        height: 30,
+                        width: 30,
+                        child: Center(child: Icon(Icons.add, color: Colors.white,)),
+                        decoration: BoxDecoration(
+                          color: Colors.indigoAccent,
+                          borderRadius: BorderRadius.all(Radius.circular(30))
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ),
-          ],
+          ),
         ),
       ));
     }
@@ -1298,7 +1402,7 @@ class _HomeState extends State<Home> {
                     if (me.stories.isNotEmpty) {
                       return ViewStory(launchedFromHomeScreen: false, users: <RivalRootUser>[me],);
                     } else {
-                      return CreateStory();
+                      return CreateTextStory();
                     }
                   },
                 ),
@@ -1329,46 +1433,9 @@ class _HomeState extends State<Home> {
             },
             builder: (context, child) {
               RivalUser user = Provider.of<RivalUser>(context);
-              return Container(
-                width: 60,
-                height: 84,
-                child: Column(
-                  children: [
-                    OpenContainer(
-                      closedBuilder: (context, action) => Container(
-                        height: 60,
-                        width: 60,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.all(Radius.circular(20)),
-                          border: user.storyViewed ? Border.all(style: BorderStyle.none) : Border.all(color: Colors.indigoAccent, width: 2, style: BorderStyle.solid)
-                        ),
-                        child: Hero(
-                          tag: 'story-${user.uid}',
-                          child: Padding(
-                            padding: EdgeInsets.all(user.storyViewed ? 0 : 2),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.all(Radius.circular(user.storyViewed ? 20 : 16)),
-                              child: Image(
-                                image: user.photo,
-                                fit: BoxFit.cover,
-                                width: user.storyViewed ? 60 : 55,
-                                height: user.storyViewed ? 60 : 55,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      closedElevation: 0,
-                      closedColor: Colors.transparent,
-                      openElevation: 0,
-                      openBuilder: (context, action) => ViewStory(initialIndex: localStories.indexWhere((RivalUser u) => u.uid == user.uid),),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 5),
-                      child: Text('${user.username}', overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: RivalFonts.feature)),
-                    )
-                  ],
-                ),
+              return UserStoryButton(
+                user: user,
+                initialIndex: localStories.indexWhere((RivalUser u) => u.uid == user.uid),
               );
             },
           ),
@@ -1500,7 +1567,7 @@ class _HomeState extends State<Home> {
     });
   }
 
-  Future<void> reload() async {
+  Future<void> refresh() async {
     setState(() {
       page = 1;
       postsAvailable = true;
@@ -1515,17 +1582,17 @@ class _HomeState extends State<Home> {
 
 }
 
-class Ad extends StatefulWidget {
+class GoogleAd extends StatefulWidget {
   
   final NativeAdmobController controller;
 
-  const Ad({Key key, @required this.controller}) : super(key: key);
+  const GoogleAd({Key key, @required this.controller}) : super(key: key);
 
   @override
-  _AdState createState() => _AdState();
+  _GoogleAdState createState() => _GoogleAdState();
 }
 
-class _AdState extends State<Ad> {
+class _GoogleAdState extends State<GoogleAd> {
 
   NativeAdmobController adCtrl;
   bool adLoaded = false;
@@ -1562,12 +1629,12 @@ class _AdState extends State<Ad> {
     return SizedBox(
       height: adLoaded ? MediaQuery.of(context).size.height / 10 : 0,
       width: double.infinity,
-      child: Card(
-        color: (MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.grey[50] : Colors.white10),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(20)),
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(color: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.grey[300] : Colors.white12, width: 0.8)
+          )
         ),
-        elevation: 0,
         margin: EdgeInsets.zero,
         child: Padding(
           padding: const EdgeInsets.all(8.0),
@@ -1580,8 +1647,114 @@ class _AdState extends State<Ad> {
                 backgroundColor: Colors.indigoAccent,
                 color: Colors.white,
               ),
+              headlineTextStyle: NativeTextStyle(
+                fontSize: Theme.of(context).textTheme.headline6.fontSize,
+              ),
+              bodyTextStyle: NativeTextStyle(
+                fontSize: Theme.of(context).textTheme.bodyText1.fontSize,
+              ),
+              priceTextStyle: NativeTextStyle(
+                fontSize: Theme.of(context).textTheme.subtitle2.fontSize,
+              ),
+              advertiserTextStyle: NativeTextStyle(
+                fontSize: Theme.of(context).textTheme.subtitle1.fontSize,
+              ),
+              adLabelTextStyle: NativeTextStyle(
+                backgroundColor: Colors.yellow,
+                color: Colors.black,
+              )
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class UserStoryButton extends StatefulWidget {
+
+  final RivalUser user;
+  final int initialIndex;
+
+  UserStoryButton({Key key, this.user, this.initialIndex}) : super(key: key);
+
+  @override
+  _UserStoryButtonState createState() => _UserStoryButtonState();
+}
+
+class _UserStoryButtonState extends State<UserStoryButton> {
+
+  bool isTapped = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (details) {
+        setState(() {
+          isTapped = true;
+        });
+      },
+      onTapUp: (details) {
+        setState(() {
+          isTapped = false;
+        });
+      },
+      onTapCancel: () {
+        setState(() {
+          isTapped = false;
+        });
+      },
+      child: Container(
+        width: 60,
+        height: 84,
+        child: Column(
+          children: [
+            OpenContainer(
+              closedBuilder: (context, action) => AnimatedContainer(
+                height: isTapped ? 57 : 60,
+                width: isTapped ? 57 : 60,
+                duration: Duration(milliseconds: 300),
+                margin: isTapped ? EdgeInsets.all(1.5) : EdgeInsets.zero,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.all(Radius.circular(20)),
+                  border: (widget.user.storyViewed)
+                    ? Border.all(
+                      style: BorderStyle.none
+                    )
+                    : Border.all(
+                      color: Colors.indigoAccent,
+                      width: 2,
+                      style: BorderStyle.solid,
+                    ),
+                ),
+                child: Hero(
+                  tag: 'story-${widget.user.uid}',
+                  child: Padding(
+                    padding: EdgeInsets.all(widget.user.storyViewed ? 0 : 2),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.all(Radius.circular(widget.user.storyViewed ? 20 : 16)),
+                      child: Image(
+                        image: widget.user.photo,
+                        fit: BoxFit.cover,
+                        width: widget.user.storyViewed ? 60 : 55,
+                        height: widget.user.storyViewed ? 60 : 55,
+                        color: isTapped ? Colors.black12 : null,
+                        colorBlendMode: BlendMode.darken,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              closedElevation: 0,
+              closedColor: Colors.transparent,
+              openElevation: 0,
+              openBuilder: (context, action) => ViewStory(initialIndex: widget.initialIndex,),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 5),
+              child: Text('${widget.user.username}', overflow: TextOverflow.ellipsis),
+            )
+          ],
         ),
       ),
     );

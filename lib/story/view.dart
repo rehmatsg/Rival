@@ -202,6 +202,7 @@ class _ViewStoryState extends State<ViewStory> {
         for (var i = 0; i < indexOfFirstUnseenStory; i++) {
           userStoryItems[i].shown = true;
         }
+        currentStoryIndex = indexOfFirstUnseenStory;
       }
       stories[user] = userStoryItems;
     });
