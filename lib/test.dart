@@ -56,9 +56,10 @@ class _TestState extends State<Test> {
                 isLoading = true;
               });
               for (DocumentSnapshot doc in allUsers) {
-                bool isBusinessAccount = doc.data()['isBusinessAccount'];
                 await doc.reference.update({
-                  'type': isBusinessAccount ? 'business' : 'personal'
+                  'partners': {},
+                  'manuallyApprovePartnerRequests': true,
+                  'partnerRequests': {}
                 });
               }
               print('Commited all users');
