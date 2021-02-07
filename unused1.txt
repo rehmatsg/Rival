@@ -1,0 +1,449 @@
+import 'dart:async';
+import 'dart:ui';
+import 'package:animations/animations.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/material.dart';
+import 'package:native_state/native_state.dart';
+import 'package:quick_actions/quick_actions.dart';
+import 'package:receive_sharing_intent/receive_sharing_intent.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:vibration/vibration.dart';
+import 'post/create.dart';
+import 'story/create.dart';
+import 'story/view.dart';
+import 'widgets/widgets.dart';
+import 'account/signin.dart';
+import 'providers.dart';
+import 'account/account.dart';
+import 'screens/explore.dart';
+import 'account/profile.dart';
+import 'screens/rival.dart';
+
+Future<void> main() async {
+  Crashlytics.instance.enableInDevMode = true; // Start Firebase Crashlytics in Development mode
+  FlutterError.onError = Crashlytics.instance.recordFlutterError; // Record every crash and send it to Firebase
+  runApp(Rival());
+  await RivalProvider.init();
+}
+
+Stream<User> firebaseStream = FirebaseAuth.instance.onAuthStateChanged;
+
+class Rival extends StatelessWidget {
+
+  final FirebaseAnalytics analytics = FirebaseAnalytics();
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Rival',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.indigo,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+        appBarTheme: AppBarTheme(color: Colors.white, elevation: 1.5, brightness: Brightness.light, actionsIconTheme: IconThemeData(color: Colors.black), iconTheme: IconThemeData(color: Colors.black), textTheme: TextTheme(headline6: TextStyle(color: Colors.black, fontSize: 22, fontFamily: RivalFonts.feature))),
+      ),
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        appBarTheme: AppBarTheme(color: Colors.white10, elevation: 1, brightness: Brightness.dark, actionsIconTheme: IconThemeData(color: Colors.white), iconTheme: IconThemeData(color: Colors.white), textTheme: TextTheme(headline6: TextStyle(color: Colors.white, fontSize: 22, fontFamily: RivalFonts.feature))),
+        backgroundColor: Colors.black54,
+        scaffoldBackgroundColor: Colors.black12
+      ),
+      home: LandingPage(),
+    );
+  }
+}
+
+class LandingPage extends StatefulWidget {
+  @override
+  _LandingPageState createState() => _LandingPageState();
+}
+
+class _LandingPageState extends State<LandingPage> {
+  final FirebaseMessaging _fcm = FirebaseMessaging();
+  // final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
+
+  StreamSubscription firebaseStreamSubscription;
+
+  @override
+  void initState() {
+    firebaseStreamSubscription = firebaseStream.listen((event) { });
+    _fcm.configure(
+      onMessage: (message) async {
+        print(message);
+        SnackBar snackbar = SnackBar(content: Text(message['notification']['body']), duration: Duration(seconds: 3),);
+        Scaffold.of(context).showSnackBar(snackbar);
+      },
+      onResume: (message) async {
+        print(message);
+      }
+    );
+    // ignore: unused_local_variable, cancel_subscriptions
+    StreamSubscription _intentDataStreamSubscription;
+    // Get files shared from Gallery
+    _intentDataStreamSubscription = ReceiveSharingIntent.getMediaStream().listen((List<SharedMediaFile> value) {
+      if (value != null) {
+        Navigator.of(context).push(RivalNavigator(page: CreatePost(sharedMediaFiles: value,),));
+      }
+    }, onError: (err) {
+      print("getIntentDataStream error: $err");
+    });
+    ReceiveSharingIntent.getInitialMedia().then((List<SharedMediaFile> value) {
+      if (value != null) {
+        Navigator.of(context).push(RivalNavigator(page: CreatePost(sharedMediaFiles: value,),));
+      }
+    });
+
+    // Initialize 3D Touch shortcuts
+    final QuickActions quickActions = QuickActions();
+    quickActions.initialize((String shortcutType) async {
+      User me = await FirebaseAuth.instance.currentUser();
+      DocumentSnapshot myDoc = await firestore.collection('users').doc(me.uid).get();
+      if (shortcutType == "account") Navigator.of(context).push(RivalNavigator(page: Account(),));
+      if (shortcutType == "new_post") Navigator.of(context).push(RivalNavigator(page: CreatePost(),));
+      if (shortcutType == "explore") Navigator.of(context).push(RivalNavigator(page: ExplorePage(doc: myDoc),));
+    });
+    quickActions.setShortcutItems(<ShortcutItem>[
+      const ShortcutItem(
+        type: 'account',
+        localizedTitle: 'My Account',
+        icon: 'account'
+      ),
+      const ShortcutItem(
+        type: 'new_post',
+        localizedTitle: 'New Post',
+        icon: 'new_post'
+      ),
+      const ShortcutItem(
+        type: 'explore',
+        localizedTitle: 'Explore',
+        icon: 'explore'
+      ),
+      const ShortcutItem(
+        type: 'home',
+        localizedTitle: 'Rival',
+        icon: 'home'
+      ),
+    ]);
+    _init();
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    firebaseStreamSubscription.cancel();
+    super.dispose();
+  }
+
+  _init() async {
+    appName = await RivalProvider.appName();
+  }
+
+  Future<User> _future() async {
+    User curUs = await FirebaseAuth.instance.currentUser();
+    print(rivalInitialization.isCompleted);
+    if (curUs == null) {
+      return null;
+    } else {
+      if (rivalInitialization.isCompleted) {
+        return curUs;
+      } else {
+        await rivalInitialization.future;
+        return curUs;
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder(
+      future: RivalProvider.appAvailable(),
+      builder: (context, snapshot) {
+        print(snapshot.connectionState);
+        if (snapshot.connectionState == ConnectionState.done && snapshot.data == false) {
+          // Rival in maintenance break
+          return MaintenanceAlert();
+        } else {
+          return FutureBuilder<User>(
+            future: _future(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
+                return Home();
+              } else if (snapshot.connectionState == ConnectionState.done && !snapshot.hasData) {
+                return SignIn();
+              }
+              return Scaffold(
+                body: SafeArea(
+                  child: Column(
+                    children: [
+                      LinearProgressIndicator(),
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Center(
+                              heightFactor: 1,
+                              child: Hero(tag: 'rival', child: Text('Rival', style: TextStyle(fontFamily: RivalFonts.rival, fontSize: Theme.of(context).textTheme.headline2.fontSize + 20)))
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        }
+      },
+    );
+  }
+}
+
+class Home extends StatefulWidget {
+  @override
+  _HomeState createState() => _HomeState();
+}
+
+String appName;
+
+class _HomeState extends State<Home> {
+
+  final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      key: _scaffoldKey,
+      appBar: AppBar(
+        title: Hero(tag: 'rival', child: Text(appName != null ? appName : 'Rival', style: TextStyle(fontFamily: 'Playfair Display', fontSize: 25),)),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.search),
+            tooltip: 'Search',
+            onPressed: () => showSearch(
+              context: context,
+              delegate: RivalSearchDelegate()
+            )
+          ),
+          IconButton(
+            icon: Icon(Icons.explore),
+            tooltip: 'Explore',
+            onPressed: () async {
+              print(SavedState.of(context).child('rival').getBool('signedIn'));
+              if (CurrentUser().snapshot != null) {
+                if (await Vibration.hasVibrator()) Vibration.vibrate(duration: 5);
+                Navigator.of(context).push(RivalNavigator(page: ExplorePage(),));
+              }
+            }
+          ),
+          Padding(
+            padding: const EdgeInsets.all(13),
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context, RivalNavigator(page: MyProfilePage()),
+                );
+              },
+              child: ProfilePhoto(width: 30, height: 30),
+            ),
+          )
+        ],
+      ),
+      body: RefreshIndicator(
+        child: CustomScrollView(
+          slivers: [
+            _buildStories(),
+            _buildPosts()
+          ],
+        ),
+        onRefresh: () async {
+          await RivalProvider.reloadHomeScreen();
+          setState(() {});
+        }
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => RivalProvider.navigate(context, CreatePost()),
+        child: Icon(Icons.add),
+        tooltip: 'New Post',
+      ),
+    );
+  }
+  
+  Widget _buildStories() {
+    return FutureBuilder<List<User>>(
+      future: RivalProvider.getStories(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
+          print(snapshot.data);
+          return SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Container(
+                height: 84,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: snapshot.data.length + 1,
+                  cacheExtent: 9999,
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 5, left: 5),
+                        child: Column(
+                          children: [
+                            Tooltip(
+                              message: 'Create Story',
+                              child: GestureDetector(
+                                onTap: () => RivalProvider.navigate(context, CreateStory()),
+                                child: Container(
+                                  height: 84,
+                                  width: 50,
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          height: 30,
+                                          width: 30,
+                                          child: Center(child: Icon(Icons.add, color: Colors.white,)),
+                                          decoration: BoxDecoration(
+                                            color: Colors.indigoAccent,
+                                            borderRadius: BorderRadius.all(Radius.circular(30))
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    } else {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 5),
+                        child: Column(
+                          children: [
+                            InkWell(
+                              onTap: () => Navigator.of(context).push(RivalNavigator(transitionType: SharedAxisTransitionType.vertical, page: ViewStory(isCurrentUser: false, user: snapshot.data()[index - 1], isFromHomeScreen: true,))),
+                              child: Container(
+                                height: 60,
+                                width: 60,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.all(Radius.circular(20))
+                                ),
+                                child: Hero(
+                                  tag: 'story-${snapshot.data()[index - 1].uid}',
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.all(Radius.circular(20)),
+                                    child: Image(image: snapshot.data()[index - 1].photo, fit: BoxFit.cover,),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 5),
+                              child: Text('@${snapshot.data()[index - 1].username}', style: TextStyle(fontFamily: RivalFonts.feature, fontWeight: snapshot.data()[index - 1].storyViewed ? FontWeight.normal : FontWeight.bold)),
+                            )
+                          ],
+                        ),
+                      );
+                    }
+                  }
+                ),
+              ),
+            ),
+          );
+        } else {
+          return SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Container(
+                height: 84,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: 4,
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 5, left: 5),
+                        child: Column(
+                          children: [
+                            Tooltip(
+                              message: 'Create Story',
+                              child: GestureDetector(
+                                onTap: () => RivalProvider.navigate(context, CreateStory()),
+                                child: Container(
+                                  height: 84,
+                                  width: 50,
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          height: 30,
+                                          width: 30,
+                                          child: Center(child: Icon(Icons.add, color: Colors.white,)),
+                                          decoration: BoxDecoration(
+                                            color: Colors.indigoAccent,
+                                            borderRadius: BorderRadius.all(Radius.circular(30))
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    } else {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: Column(
+                          children: [
+                            Shimmer.fromColors(
+                              child: Container(
+                                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.all(Radius.circular(20))),
+                                height: 60,
+                                width: 60
+                              ),
+                              baseColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black12 : Colors.white10,
+                              highlightColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black12 : Colors.white12
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 5,),
+                              child: Shimmer.fromColors(child: Container(decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.all(Radius.circular(3))), height: 14, width: 60), baseColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black12 : Colors.white10, highlightColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black26 : Colors.white12),
+                            )
+                          ],
+                        ),
+                      );
+                    }
+                  }
+                ),
+              ),
+            ),
+          );
+        }
+      },
+    );
+  }
+  
+  Widget _buildPosts() {
+    return SliverList(
+      delegate: SliverChildListDelegate(
+        List.generate(
+          homeScreenPosts.length,
+          (index) => PostView(post: Post(doc: homeScreenPosts[index]))
+        ),
+        addAutomaticKeepAlives: true
+      ),
+    );
+  }
+
+}
