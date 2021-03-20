@@ -1,4 +1,5 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../app.dart';
 
@@ -16,6 +17,8 @@ class _ChangePasswordState extends State<ChangePassword> {
   final TextEditingController _newPasswordController = TextEditingController();
   String oldPasswordError;
   String newPasswordError;
+
+  bool isLoading = false;
   
   @override
   void setState(fn) {
@@ -90,11 +93,19 @@ class _ChangePasswordState extends State<ChangePassword> {
               children: <Widget>[
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                  child: OutlineButton(
-                    onPressed: () {
+                  child: OutlinedButton(
+                    onPressed: isLoading ? null : () {
                       _resetPassword();
                     },
-                    child: const Text('Change password'),
+                    child: isLoading
+                    ? SizedBox(
+                      height: 14,
+                      width: 14,
+                      child: CustomProgressIndicator(
+                        valueColor: Colors.indigoAccent,
+                      )
+                    )
+                    : Text('Change password'),
                   ),
                 )
               ],
@@ -137,40 +148,87 @@ class _ChangePasswordState extends State<ChangePassword> {
     final newPassword = _newPasswordController.text;
     final oldPassword = _oldPasswordController.text;
 
+    setState(() {
+      isLoading = true;
+    });
+
     if (_formKey.currentState.validate() && oldPassword != null && newPassword != null) {
       try {
+        UserCredential credential = await FirebaseAuth.instance.signInWithEmailAndPassword(email: me.email, password: oldPassword);
+        me.firebaseUser = credential.user;
+        if (await changePassword(password: newPassword)) {
+        // Password has been changed. Now, logout of other devices
+          Map devices = me.devices;
+          devices.removeWhere((key, value) {
+            return value['token'] != me.token;
+          });
+          await me.update({
+            'devices': devices
+          });
 
-        await analytics.logEvent(name: 'password_changed');
-
-        await me.user.updatePassword(newPassword);
-
-        await RivalProvider.showToast(
-          text: 'Password changed',
-        );
-        _newPasswordController.clear();
-        _oldPasswordController.clear();
+          await RivalProvider.showToast(
+            text: 'Password changed',
+          );
+          _newPasswordController.clear();
+          _oldPasswordController.clear();
+        }
       } catch (e) {
         switch (e.code.toString()) {
-          case 'weak-password':
+          case 'user-disabled':
             setState(() {
-              newPasswordError = 'Weak password';
-              _formKey.currentState.validate();
+              oldPasswordError = 'Unable to verify. Error account disabled';
             });
             break;
-          case 'requires-recent-login':
+          case 'user-not-found':
             setState(() {
-              newPasswordError = 'This action requires recent login';
-              _formKey.currentState.validate();
+              oldPasswordError = 'Unable to verify password';
+            });
+            break;
+          case 'wrong-password':
+            setState(() {
+              oldPasswordError = 'Incorrect Password';
             });
             break;
           default:
             setState(() {
-              oldPasswordError = "An error occured. Please try again later";
-              _formKey.currentState.validate();
+              oldPasswordError = 'An error occured. Please try again later';
             });
             break;
         }
       }
+    }
+
+    setState(() {
+      isLoading = false;
+    });
+  }
+
+  Future<bool> changePassword({
+    @required String password
+  }) async {
+    try {
+      await analytics.logEvent(name: 'password_changed');
+      await me.user.updatePassword(password);
+      return true;
+    } catch (e) {
+      switch (e.code.toString()) {
+        case 'weak-password':
+          setState(() {
+            newPasswordError = 'Weak password';
+          });
+          break;
+        case 'requires-recent-login':
+          setState(() {
+            newPasswordError = 'Please login again to change password';
+          });
+          break;
+        default:
+          setState(() {
+            oldPasswordError = "An error occured. Please try again later";
+          });
+          break;
+      }
+      return false;
     }
   }
 

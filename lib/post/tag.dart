@@ -81,12 +81,14 @@ class _PostsByTagState extends State<PostsByTag> {
                   )
                   : null,
                 title: Text('#$tag', style: TextStyle(fontFamily: RivalFonts.feature),),
-                trailing: FlatButton(
-                  color: isSubsLoading ? (MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.grey[100] : Colors.white10) : Colors.indigoAccent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(10))
+                trailing: TextButton(
+                  style: TextButton.styleFrom(
+                    backgroundColor: isSubsLoading ? (MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.grey[100] : Colors.white10) : Colors.indigoAccent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(10))
+                    ),
                   ),
-                  child: isSubsLoading ? Container(height: 14, width: 14, child: CircularProgressIndicator(strokeWidth: 2,)) : Text(me.tagsSubscribed.contains(tag.toLowerCase().trim()) ? 'Unsubscribe' : 'Subscribe', style: TextStyle(color: Colors.white),),
+                  child: isSubsLoading ? Container(height: 14, width: 14, child: CustomProgressIndicator(strokeWidth: 2,)) : Text(me.tagsSubscribed.contains(tag.toLowerCase().trim()) ? 'Unsubscribe' : 'Subscribe', style: TextStyle(color: Colors.white),),
                   onPressed: () async {
                     setState(() {
                       isSubsLoading = true;
@@ -110,11 +112,11 @@ class _PostsByTagState extends State<PostsByTag> {
                   },
                   onLongPress: () => showDialog(
                     context: context,
-                    child: AlertDialog(
+                    builder: (context) => AlertDialog(
                       title: Text('Subscribe to #$tag'),
                       content: Text('When you subscribe to a tag, you\'ll recieve a notification whenever a new post contains #$tag'),
                       actions: [
-                        FlatButton(
+                        TextButton(
                           onPressed: () => Navigator.of(context).pop(),
                           child: Text('Ok'),
                         )
@@ -168,7 +170,7 @@ class _PostsByTagState extends State<PostsByTag> {
                     child: SizedBox(
                       width: 24,
                       height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2,),
+                      child: CustomProgressIndicator(strokeWidth: 2,),
                     )
                   ) else VisibilityDetector(
                     key: UniqueKey(),

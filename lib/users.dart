@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:animations/animations.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:supercharged/supercharged.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:octo_image/octo_image.dart';
@@ -71,7 +72,7 @@ class RivalRootUser {
   /// Returns [Map<String, int>] map which contains all requests made to user for sponsor
   /// Here the [String] is the uid of requester
   /// And [int] is the timestamp of when request was sent
-  Map get partnerRequests => data['partnerRequests'];
+  Map get partnerRequests => data['partnerRequests'] ?? {};
   /// If [true] means that we have to request partner approval
   /// else it can be directly added
   /// Return [bool]
@@ -79,7 +80,7 @@ class RivalRootUser {
   /// Returns [Map<String, int>] map which contains all users who are approved as partner
   /// Here the [String] is the uid of requester
   /// And [int] is the timestamp of when request was sent
-  Map get partners => data['partners'];
+  Map get partners => data['partners'] ?? {};
   /// Category of the Business user has
   String get category => data['category'];
   /// [ImageProvider] for user's profile photo. Does not return null in any case
@@ -127,20 +128,6 @@ class RivalRootUser {
   /// Show email option in Profile Page for Business Account ONLY
   bool get showContactEmail => isBusinessAccount ? (data['showContactEmail'] ?? false) : false;
 
-  /// Token of device used to do activity
-  String get token {
-    String tokenF = sharedPreferences.getString('token');
-    if (tokenF == null) {
-      return null;
-    }
-    Map devices = me.data['devices'];
-    return devices.values.lastWhere((item) {
-      if (item['device']['token'] == tokenF) {
-        return true;
-      } else return false;
-    })['device']['token'];
-  }
-
   /// Update user's [DocumentSnapshot] with [Map<String, dynamaic>] data
   Future<void> update(Map<String, dynamic> data, {bool reload = false}) async {
     await reference.update(data);
@@ -186,7 +173,7 @@ class Me extends RivalRootUser {
   /// List of [String] all tags I am subscribed to
   List get tagsSubscribed => data['tagsSubscribed'] ?? [];
   /// List of [DocumentReference] of Bookmarked Posts
-  List get bookmarks => data['bookmarks'];
+  List get bookmarks => data['bookmarks'] ?? [];
   /// List of [String] of Bookmarked Posts
   List<String> get bookmarksById {
     List<String> bookmarksById = [];
@@ -202,7 +189,22 @@ class Me extends RivalRootUser {
   /// List of [String] that contains all topics that current user is subscribed to
   List get subscriptions => data['subscriptions'] ?? [];
 
-  String get loginTimestamp => me.data['devices'].keys.toList()[(me.data['devices'] as Map).values.toList().indexWhere((test) => test['token'] == sharedPreferences.getString('token'))];
+  Map get devices => me.data['devices'] ?? {};
+
+  String get loginTimestamp {
+    int index = devices.values.toList().indexWhere((test) => test['token'] == token);
+    if (index >= 0) {
+      return devices.keys.toList().elementAtOrNull(devices.values.toList().indexWhere((test) => test['token'] == sharedPreferences.getString('token')));
+    } else {
+      return null;
+    }
+  }
+
+  /// Token of device used to do activity
+  String get token {
+    String tokenF = sharedPreferences.getString('token');
+    return tokenF;
+  }
 
   /// [Stream<Me>] of the user
   Stream<Me> get streamX {
@@ -220,13 +222,36 @@ class Me extends RivalRootUser {
           'devices.$loginTimestamp': FieldValue.delete(),
           'token': null
         });
-        me = myPosts = feed = storyItems = homeScreenPosts = homeScreenStories = topPosts = null;
+        me = feed = storyItems = homeScreenPosts = homeScreenStories = topPosts = null;
+        myPosts = [];
         await sharedPreferences.remove('token');
         await FirebaseAuth.instance.signOut();
       },
       onComplete: () {
         RivalProvider.showToast(
           text: 'Signed Out'
+        );
+        Navigator.of(context).pushAndRemoveUntil(RivalNavigator(page: SignIn(), transitionType: SharedAxisTransitionType.scaled), (route) => false);
+      }
+    );
+  }
+
+  Future<void> signOutOfAllDevices(BuildContext context) async {
+    await Loader.show(
+      context,
+      function: () async {
+        await update({
+          'devices': FieldValue.delete(),
+          'token': null
+        });
+        me = feed = storyItems = homeScreenPosts = homeScreenStories = topPosts = null;
+        myPosts = [];
+        await sharedPreferences.remove('token');
+        await FirebaseAuth.instance.signOut();
+      },
+      onComplete: () {
+        RivalProvider.showToast(
+          text: 'Logged out of all devices'
         );
         Navigator.of(context).pushAndRemoveUntil(RivalNavigator(page: SignIn(), transitionType: SharedAxisTransitionType.scaled), (route) => false);
       }
@@ -265,12 +290,11 @@ class Me extends RivalRootUser {
     final StorageUploadTask uploadTask = FirebaseStorage.instance.ref().child('profile_photo').child('${me.uid}-${new DateTime.now().millisecondsSinceEpoch}').putFile(photo);
     StorageTaskSnapshot meta = await uploadTask.onComplete;
     final String url = (await meta.ref.getDownloadURL()).toString();
-    me.user.updateProfile(photoURL: url);
-    await me.reference.update({
+    await me.user.updateProfile(photoURL: url);
+    await me.update({
       'photoUrl': url
-    });
+    }, reload: true);
     await me.user.reload();
-    await me.reload();
     await RivalProvider.showToast(
       text: 'Profile photo updated',
     );
@@ -418,7 +442,7 @@ class RivalUser extends RivalRootUser {
       await me.reference.update({
         'following': FieldValue.arrayUnion([reference])
       });
-      me.reload();
+      await me.reload();
       await RivalProvider.showToast(
         text: 'Started following @$username'
       );
@@ -642,7 +666,7 @@ class _UserListTileState extends State<UserListTile> {
             baseColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.grey[200] : Colors.grey[900],
             highlightColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.grey[200] : Colors.grey[900]
           )
-          : ((user.stories != null && user.stories.length > 0)
+          : ((user.stories != null && user.stories.length > 0 && !user.private)
             ? GestureDetector(
               onTap: () async {
                 await RivalProvider.vibrate();
@@ -660,7 +684,7 @@ class _UserListTileState extends State<UserListTile> {
                   child: ClipOval(
                     child: OctoImage(
                       image: user.photo,
-                      placeholderBuilder: (context) => CircularProgressIndicator()
+                      placeholderBuilder: (context) => CustomProgressIndicator()
                     ),
                   ),
                 ),
@@ -669,7 +693,7 @@ class _UserListTileState extends State<UserListTile> {
             : ClipOval(
               child: OctoImage(
                 image: user.photo,
-                placeholderBuilder: (context) => CircularProgressIndicator(),
+                placeholderBuilder: (context) => CustomProgressIndicator(),
                 width: 40,
                 height: 40,
               ),
@@ -744,7 +768,7 @@ class _UserListTileState extends State<UserListTile> {
             ),
           ],
         ) : Text(widget.subtitle != null ? widget.subtitle : user.username)),
-        trailing: (isLoading || isCurrentUser) ? null : FlatButton(
+        trailing: (isLoading || isCurrentUser) ? null : TextButton(
           onPressed: () async {
             await RivalProvider.vibrate();
             user.followUnfollowRequest();
@@ -759,9 +783,10 @@ class _UserListTileState extends State<UserListTile> {
               return Text(user.followUnfollow, style: TextStyle(color: Colors.indigoAccent, fontWeight: FontWeight.bold),);
             },
           ),
-          splashColor: Colors.indigoAccent.withOpacity(0.2),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(10))
+          style: TextButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(10))
+            ),
           ),
         ),
         onTap: () {

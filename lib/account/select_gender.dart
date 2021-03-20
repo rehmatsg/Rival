@@ -50,7 +50,7 @@ class _SelectGenderState extends State<SelectGender> {
             padding: const EdgeInsets.symmetric(horizontal: 15),
             child: Row(
               children: [
-                OutlineButton(
+                OutlinedButton(
                   onPressed: () async {
                     Loader.show(
                       context,

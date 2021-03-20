@@ -55,9 +55,9 @@ class _ViewStoryState extends State<ViewStory> {
             username: stories.keys.toList()[index].username,
             subtitle: stories.values.toList()[index].elementAtOrElse(currentStoryIndex, () => stories.values.toList()[index][0]).story.since, // Using SUPERCHARGED to avoid errors
             firstIcon: stories.keys.toList()[index].uid == me.uid
-            ? FlatButton.icon(
+            ? TextButton.icon(
               icon: Icon(Icons.remove_red_eye, color: Colors.white),
-              label: Text('${stories.values.toList()[index].elementAtOrElse(currentStoryIndex, () => stories.values.toList()[index][0]).story.views} Views', style: TextStyle(color: Colors.white),),
+              label: Text('${stories.values.toList()[index].elementAtOrElse(currentStoryIndex, () => stories.values.toList()[index][0]).story.views.length} Views', style: TextStyle(color: Colors.white),),
               onPressed: () => Navigator.of(context).push(RivalNavigator(page: StoryViews(story: stories.values.toList()[index].elementAtOrElse(currentStoryIndex, () => stories.values.toList()[index][0]).story),))
             )
             : null,
@@ -677,7 +677,7 @@ class _ViewStoryState extends State<ViewStory> {
 //                               Container(
 //                                 height: 50,
 //                                 width: 50,
-//                                 child: CircularProgressIndicator(),
+//                                 child: CustomProgressIndicator(),
 //                               )
 //                             ],
 //                           );
@@ -694,7 +694,7 @@ class _ViewStoryState extends State<ViewStory> {
 //                             placeholderBuilder: (context) => Container(
 //                               height: 50,
 //                               width: 50,
-//                               child: CircularProgressIndicator(),
+//                               child: CustomProgressIndicator(),
 //                             ),
 //                           ),
 //                         ),

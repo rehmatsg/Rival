@@ -108,7 +108,7 @@ class _EditPostState extends State<EditPost> {
                             child: Container(
                               height: 50,
                               width: 50,
-                              child: CircularProgressIndicator(strokeWidth: 2,),
+                              child: CustomProgressIndicator(strokeWidth: 2,),
                             ),
                           ),
                         ),
@@ -193,11 +193,11 @@ class _EditPostState extends State<EditPost> {
                             RivalProvider.vibrate();
                             if (post.allowComments && !value) await showDialog(
                               context: context,
-                              child: AlertDialog(
+                              builder: (context) => AlertDialog(
                                 title: Text('Disable Comments'),
                                 content: Text('New comments will be disabled but existing comments on your post will be visible.'),
                                 actions: [
-                                  FlatButton(
+                                  TextButton(
                                     child: Text('Ok'),
                                     onPressed: Navigator.of(context).pop,
                                   )
@@ -236,22 +236,22 @@ class _EditPostState extends State<EditPost> {
               children: <Widget>[
                 Padding(
                   padding: EdgeInsets.only(right: 10),
-                  child: FlatButton(
+                  child: TextButton(
                     child: Text('Delete Post'),
                     onPressed: () => showDialog(
                       context: context,
-                      child: AlertDialog(
+                      builder: (context) => AlertDialog(
                         title: Text('Delete Post?'),
                         content: Text('Are you sure you want to delete this post. This action cannot be reversed. Continue?'),
                         actions: [
-                          FlatButton(
+                          TextButton(
                             onPressed: () {
                               Navigator.of(context).pop();
                               _deletePost();
                             },
                             child: Text('Delete'),
                           ),
-                          FlatButton(
+                          TextButton(
                             onPressed: () => Navigator.of(context).pop(),
                             child: Text('Cancel'),
                           )
@@ -262,7 +262,7 @@ class _EditPostState extends State<EditPost> {
                 ),
                 Padding(
                   padding: EdgeInsets.only(right: 10),
-                  child: OutlineButton(
+                  child: OutlinedButton(
                     child: Text('Save Changes'),
                     onPressed: _save,
                   ),
@@ -279,7 +279,7 @@ class _EditPostState extends State<EditPost> {
             Container(
               height: 100,
               width: 100,
-              child: CircularProgressIndicator(),
+              child: CustomProgressIndicator(),
             ),
             Container(height: 20,),
             Text(loadingState ?? "...", style: TextStyle(fontFamily: RivalFonts.feature, fontSize: 20),)

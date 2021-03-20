@@ -1,8 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:visibility_detector/visibility_detector.dart';
-import '../post/post.dart';
-import '../providers.dart';
+import '../app.dart';
 
 List<Post> myPosts = [];
 
@@ -125,7 +124,7 @@ class _PostsByUserState extends State<PostsByUser> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Center(
-            child: CircularProgressIndicator(),
+            child: CustomProgressIndicator(),
           )
         ],
       )
@@ -147,9 +146,9 @@ class _PostsByUserState extends State<PostsByUser> {
                     child: SizedBox(
                       width: 24,
                       height: 24,
-                      child: CircularProgressIndicator(
+                      child: CustomProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation(MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black : Colors.white),
+                        valueColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black : Colors.white,
                       ),
                     )
                   ) else VisibilityDetector(

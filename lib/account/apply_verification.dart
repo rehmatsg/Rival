@@ -75,7 +75,7 @@ class _ApplyForVerificationState extends State<ApplyForVerification> {
           ListTile(
             title: Text('ID*'),
             subtitle: Text('Please attach a Government issued ID (e.g. Driver\'s License, Passport or Aadhar Card)'),
-            trailing: FlatButton(
+            trailing: TextButton(
               child: Text(id == null ? 'Select' : 'Selected'),
               onPressed: () async {
                 if (id != null) {} // File already selected
@@ -118,7 +118,7 @@ class _ApplyForVerificationState extends State<ApplyForVerification> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                OutlineButton(
+                OutlinedButton(
                   onPressed: _submit,
                   child: Text('Submit'),
                 )

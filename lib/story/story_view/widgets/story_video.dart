@@ -8,6 +8,8 @@ import 'package:video_player/video_player.dart';
 import '../utils.dart';
 import '../controller/story_controller.dart';
 
+import '../../../app.dart';
+
 class VideoLoader {
   String url;
 
@@ -119,8 +121,8 @@ class StoryVideoState extends State<StoryVideo> {
         child: Container(
           width: 70,
           height: 70,
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          child: CustomProgressIndicator(
+            valueColor: Colors.white,
             strokeWidth: 3,
           ),
         ),

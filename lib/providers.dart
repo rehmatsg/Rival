@@ -6,6 +6,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_database/firebase_database.dart' as firebaseDatabase;
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'app.dart';
 import 'package:eyro_toast/eyro_toast.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -51,6 +52,10 @@ class RivalRegex {
       r'https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)';
   static String phone = r'[\d]{3}[ ]{1}[\d]{3}';
   static String specialChars = r'\W+';
+}
+
+class RivalGoogleAds {
+  static String id = kDebugMode ? BannerAd.testAdUnitId : 'ca-app-pub-6495897586509663/6308164922';
 }
 
 firebaseDatabase.FirebaseDatabase database;
@@ -354,35 +359,17 @@ Future<List> getTopPosts(
 
 Future<List<Post>> getAds({int limit = 10}) async {
   List<Post> ads = [];
-  List<String> top10Interests = getTop10Interests();
-  QuerySnapshot querySnapshot;
-  if (top10Interests.isEmpty) {
-    querySnapshot = await firestore
-        .collection('posts')
-        .where('promoted', isEqualTo: true)
-        .orderBy('timestamp', descending: true)
-        .limit(limit)
-        .get();
-  } else {
-    querySnapshot = await firestore
-        .collection('posts')
-        .where('promoted', isEqualTo: true)
-        .where('labels', arrayContainsAny: getTop10Interests())
-        .orderBy('timestamp', descending: true)
-        .limit(limit)
-        .get();
-  }
+  QuerySnapshot querySnapshot = await firestore.collection('posts').where('promoted', isEqualTo: true).orderBy('timestamp', descending: true).limit(limit).get();
   for (DocumentSnapshot doc in querySnapshot.docs) {
     DocumentSnapshot adDoc = await firestore
-        .collection('rival')
-        .doc('promotions')
-        .collection('posts')
-        .doc(doc.id)
-        .get();
+      .collection('rival')
+      .doc('promotions')
+      .collection('posts')
+      .doc(doc.id)
+      .get();
     if (adDoc != null && adDoc.exists) {
       Post post = await Post.fetch(doc: doc, ad: adDoc);
-      print(
-          'Posts\' Ad Document: ${post.ad.data()}. Post is an AD: ${post.isPromoted}. Is AD Valid: ${post.isAdValid}');
+      print('Posts\' Ad Document: ${post.ad.data()}. Post is an AD: ${post.isPromoted}. Is AD Valid: ${post.isAdValid}');
       ads.add(post);
     }
   }
@@ -581,4 +568,77 @@ extension RivalMapExtension<T, V> on Map<T, V> {
     });
     return updated;
   }
+}
+
+
+class Database {
+  FirebaseFirestore firestore = FirebaseFirestore.instance;
+  firebaseDatabase.FirebaseDatabase fDatabase = firebaseDatabase.FirebaseDatabase.instance;
+
+  CollectionReference collection(String path) {
+    return firestore.collection(path);
+  }
+
+  /// Update data at a reference
+  /// Return `true` if successful
+  /// `false` if unsuccessful
+  Future<bool> update({
+    DocumentReference firestoreRef,
+    firebaseDatabase.DatabaseReference databaseRef,
+    @required Map data,
+  }) async {
+    try {
+      var ref = firestoreRef ?? databaseRef;
+      if (ref is DocumentReference) {
+        await ref.update(data);
+      } else if (ref is firebaseDatabase.DatabaseReference) {
+        await ref.update(data);
+      }
+      return true;
+    } catch (e) {
+      print('Error updating database: $e');
+      return false;
+    }
+  }
+
+  /// Write data at a reference
+  /// Return `true` if successful
+  /// `false` if unsuccessful
+  Future<bool> set({
+    DocumentReference firestoreRef,
+    firebaseDatabase.DatabaseReference databaseRef,
+    @required Map data,
+    /// Only if `firestoreRef` is provided
+    SetOptions setOptions,
+    /// Only if `databaseRef` is provided
+    String priority
+  }) async {
+    try {
+      var ref = firestoreRef ?? databaseRef;
+      if (ref is DocumentReference) {
+        await ref.set(data, setOptions);
+      } else if (ref is firebaseDatabase.DatabaseReference) {
+        await ref.set(data, priority: priority);
+      }
+      return true;
+    } catch (e) {
+      print('Error writing to database: $e');
+      return false;
+    }
+  }
+  
+  DocumentReference get myRef => me.reference;
+  firebaseDatabase.DatabaseReference get myDatabaseRef => fDatabase.reference().child('users').child(me.uid);
+
+  Future<void> updatePresence() async {
+    await myDatabaseRef.update({
+      'online': true,
+      'last_seen': DateTime.now().millisecondsSinceEpoch,
+    });
+    myDatabaseRef.onDisconnect().update({
+      'online': false,
+      'last_seen': DateTime.now().millisecondsSinceEpoch,
+    });
+  }
+  
 }

@@ -29,7 +29,7 @@ class _SelectSponsorState extends State<SelectSponsor> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Center(
-            child: CircularProgressIndicator(),
+            child: CustomProgressIndicator(),
           )
         ],
       )
@@ -91,10 +91,12 @@ class _SelectSponsorWidgetState extends State<SelectSponsorWidget> {
           padding: const EdgeInsets.symmetric(horizontal: 15),
           child: Row(
             children: [
-              FlatButton(
+              TextButton(
                 child: Text('Select', style: TextStyle(color: Colors.white),),
                 onPressed: isBtnLoading ? null : () => _partnerBtnTap(user),
-                color: Colors.indigoAccent
+                style: TextButton.styleFrom(
+                  backgroundColor: Colors.indigoAccent,
+                ),
               )
             ],
           ),

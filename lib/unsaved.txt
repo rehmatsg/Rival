@@ -27,7 +27,7 @@
                                             child: Container(
                                               width: MediaQuery.of(context).size.width * 0.1,
                                               height: MediaQuery.of(context).size.width * 0.1,
-                                              child: CircularProgressIndicator(strokeWidth: 2),
+                                              child: CustomProgressIndicator(strokeWidth: 2),
                                             ),
                                           );
                                         },
@@ -44,7 +44,7 @@
                                 child: Container(
                                   width: MediaQuery.of(context).size.width * 0.15,
                                   height: MediaQuery.of(context).size.width * 0.15,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: CustomProgressIndicator(strokeWidth: 2),
                                 ),
                               ),
                             );

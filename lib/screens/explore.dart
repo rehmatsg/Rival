@@ -171,7 +171,7 @@ class _NewPostsState extends State<NewPosts> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator()
+            CustomProgressIndicator()
           ],
         ),
       )
@@ -200,7 +200,7 @@ class _NewPostsState extends State<NewPosts> {
                         child: SizedBox(
                           width: 24,
                           height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2,),
+                          child: CustomProgressIndicator(strokeWidth: 2,),
                         )
                       ) else VisibilityDetector(
                         key: UniqueKey(),
@@ -309,7 +309,7 @@ class _TopTagsState extends State<TopTags> {
               child: Container(
                 height: 100,
                 width: 100,
-                child: CircularProgressIndicator(),
+                child: CustomProgressIndicator(),
               ),
             );
           }
@@ -521,10 +521,8 @@ class _ExploreState extends State<Explore> {
                 loadingWidget: Center(
                   child: Container(
                     margin: EdgeInsets.symmetric(vertical: 20),
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation(
-                        MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black : Colors.white
-                      ),
+                    child: CustomProgressIndicator(
+                      valueColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black : Colors.white,
                     ),
                   ),
                 ),
@@ -552,14 +550,15 @@ class _ExploreState extends State<Explore> {
             Container(height: 10),
             Text('You haven\'t subscribed to any topics. Subscribe to topics to find related posts.', style: Theme.of(context).textTheme.bodyText1),
             Container(height: 15),
-            FlatButton(
+            TextButton(
               child: Text('Find Topics'),
               onPressed: () async {
                 await Navigator.of(context).push(RivalNavigator(page: SubscribeToTopics()));
                 setState(() { });
               },
-              color: Colors.indigoAccent.withOpacity(0.2),
-              splashColor: Colors.indigoAccent.withOpacity(0.6),
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.indigoAccent.withOpacity(0.2),
+              ),
             )
           ],
         ),

@@ -111,7 +111,7 @@ class _CreatorIntroState extends State<CreatorIntro> {
           ),
         ],
         onDone: () { },
-        done: FlatButton(
+        done: TextButton(
           child: me.isBusinessAccount ? Text('Done') : Text('Get Started'),
           onPressed: () async {
             if (!me.isCreatorAccount) {

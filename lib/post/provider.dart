@@ -1,9 +1,13 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoder/geocoder.dart';
 import 'package:geocoder/model.dart';
 import 'package:location/location.dart';
+import 'package:property_change_notifier/property_change_notifier.dart';
 import '../app.dart';
 import 'location_search.dart';
 
@@ -488,4 +492,207 @@ class PollOption {
 
   /// Title or heading of option
   String get name => data['title'];
+}
+
+PostCreationHelper helper = PostCreationHelper();
+
+class PostCreationHelper extends ChangeNotifier {
+
+  List<PostCreationTool> queue = [];
+
+  Future<void> create({@required PostCreationTool tool}) async {
+    notifyListeners();
+    queue.add(tool);
+    tool.addListener(() => onToolChange(tool));
+    Post post = await tool.create();
+    if (post == null) RivalProvider.showToast(text: 'Failed to create post');
+    queue.remove(tool);
+    notifyListeners();
+  }
+
+  void onToolChange(PostCreationTool tool) {
+    notifyListeners();
+  }
+}
+
+class PostCreationTool extends PropertyChangeNotifier<String> {
+
+  List<Map> items;
+  String description;
+  String subtitle;
+  GeoPoint geoPoint;
+  String location;
+  bool allowComments;
+  bool containsAdultContent;
+  Size size;
+  List labels;
+  bool showLikeCount;
+  bool beta;
+  bool isProduct;
+  String productUrl;
+  List<DocumentReference> people;
+  List<String> ocr;
+  List<String> tags;
+  String btnTitle;
+  RivalUser sponsor;
+  List<String> keywords;
+  String topic;
+  List<String> mentions;
+  LocationData userLocation;
+
+  Future Function(Post post) afterCreation;
+
+  String state = "Getting things ready";
+
+  PostCreationTool({
+    @required this.items,
+    @required this.description,
+    @required this.subtitle,
+    @required this.geoPoint,
+    @required this.location,
+    @required this.allowComments,
+    @required this.containsAdultContent,
+    @required this.size,
+    @required this.labels,
+    @required this.showLikeCount,
+    @required this.beta,
+    @required this.productUrl,
+    @required this.isProduct,
+    @required this.people,
+    @required this.ocr,
+    @required this.tags,
+    @required this.btnTitle,
+    @required this.sponsor,
+    @required this.keywords,
+    @required this.topic,
+    @required this.mentions,
+    @required this.userLocation,
+    this.afterCreation
+  });
+
+  Future<Post> create() async {
+    // try {
+      Post post;
+      String postId = await getPostUid(); // Get a new id for post
+      DocumentReference ref = firestore.collection('posts').doc(postId); // Create a reference to that post location
+
+      List<Map> finalItems = [];
+      //List blurHashes = [];
+
+      for (Map map in items) {
+        if (map['type'] == 'image') {
+          File image = map['file'];
+          var time = DateTime.now().toString();
+          // Makes the app slower
+          // Uint8List filePixels = file.readAsBytesSync();
+          // var blurhash = await BlurHash.encode(filePixels, 9, 9);
+          // print(blurhash);
+          // blurHashes.add(blurhash);
+          String imageUrl = await (await FirebaseStorage.instance
+            .ref()
+            .child('posts')
+            .child("IMG-$postId-${time.replaceAll(new RegExp(r"\s+"), "")}")
+            .putFile(image)
+            .onComplete)
+            .ref
+            .getDownloadURL();
+          finalItems.add({
+            'type': 'image',
+            'url': imageUrl
+          });
+        } else { // Type of POLL
+          finalItems.add(map);
+        }
+      }
+
+      state = 'Putting it together';
+      notifyListeners();
+
+      print('Finished uploading');
+
+      int timestamp = DateTime.now().toUtc().millisecondsSinceEpoch;
+
+      String shareableUrl = (await createDynamicURL(
+        link: 'https://rival.photography/post/$postId',
+        title: '@${me.username} | Rival | Post',
+        description: '$description\nA Post by @${me.username}'
+      )) ?? 'Post ID: $postId';
+
+      await ref.set({
+        'id': postId,
+        'ratio': size.aspectRatio,
+        'size': {'width': size.width, 'height': size.height},
+        'items': finalItems,
+        'labels': labels,
+        'ocr': ocr,
+        'people': people,
+        //'blurhashes': blurHashes,
+        'subtitle': subtitle,
+        'description': description,
+        'timestamp': timestamp,
+        'keywords': keywords,
+        'tags': tags,
+        'mentions': mentions,
+        'showLikeCount': showLikeCount,
+        'likes': {},
+        'allowComments': allowComments,
+        'adult-rated': containsAdultContent,
+        'comments': {},
+        'edited': null,
+        'reach': {},
+        'shares': {},
+        'impressions': {},
+        'profile_visits': {},
+        'creator': me.uid,
+        'user': me.reference,
+        'promoted': false,
+        'sponsor': sponsor?.reference,
+        'isProduct': isProduct,
+        'productUrl': productUrl,
+        'productTitle': btnTitle,
+        'geoPoint': geoPoint,
+        'locationPlaceholder': location,
+        'available': true,
+        'takenDown': false,
+        'beta': beta,
+        'shareableUrl': shareableUrl,
+        'topic': topic,
+        'details': {
+          'timestamp': timestamp,
+          'token': me.token,
+          'location': GeoPoint(userLocation.latitude, userLocation.longitude),
+        }
+      });
+
+      state = 'Finishing up...';
+      notifyListeners();
+
+      await me.update({
+        'posts': FieldValue.arrayUnion([ref])
+      });
+
+      post = await getPost(ref.id);
+
+      await database.reference().child(me.uid).child('feed').update({
+        post.id: post.timestamp
+      });
+
+      print('Finished creating post');
+
+      if (afterCreation != null) await afterCreation(post);
+
+      print('Finished after process');
+
+      return post;
+    // } catch (e) {
+    //   print('Error creating post $e');
+    //   return null;
+    // }
+  }
+}
+
+enum PostState {
+  uploading,
+  finishing,
+  done
 }

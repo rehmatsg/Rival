@@ -79,7 +79,7 @@
 //           Container(
 //             height: 100,
 //             width: 100,
-//             child: CircularProgressIndicator(),
+//             child: CustomProgressIndicator(),
 //           )
 //         ],
 //       )
@@ -163,7 +163,7 @@
 //       ? ClipOval(
 //         child: OctoImage(
 //           image: NetworkImage(userDoc.data()['photoUrl']),
-//           progressIndicatorBuilder: (context, progress) => CircularProgressIndicator(),
+//           progressIndicatorBuilder: (context, progress) => CustomProgressIndicator(),
 //           width: 40,
 //           height: 40,
 //         ),

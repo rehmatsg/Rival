@@ -54,7 +54,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
               children: <Widget>[
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                  child: OutlineButton(
+                  child: OutlinedButton(
                     onPressed: () {
                       _resetPassword();
                     },

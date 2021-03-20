@@ -100,7 +100,7 @@ class _SetupAccountState extends State<SetupAccount> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  OutlineButton(
+                  OutlinedButton(
                     onPressed: _save,
                     child: Text('Save')
                   )

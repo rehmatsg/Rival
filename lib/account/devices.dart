@@ -25,19 +25,19 @@ class _ManageDevicesState extends State<ManageDevices> {
         title: Text('Devices'),
       ),
       body: ListView.builder(
-        itemCount: me.data['devices'].length,
+        itemCount: me.devices.length,
         itemBuilder: (context, index) => ListTile(
           leading: IconButton(
             icon: Icon(
-              (me.data['devices'] as Map).values.toList()[index]['device']['os'] == 'android' ? FontAwesome.android : FontAwesome.apple,
-              color: (me.data['devices'] as Map).values.toList()[index]['device']['os'] == 'android' ? Colors.greenAccent : (MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black : Colors.white),
+              me.devices.values.toList()[index]['device']['os'] == 'android' ? FontAwesome.android : FontAwesome.apple,
+              color: me.devices.values.toList()[index]['device']['os'] == 'android' ? Colors.greenAccent : (MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black : Colors.white),
             ),
             onPressed: null,
           ),
           visualDensity: VisualDensity.compact,
-          title: Text('${(me.data['devices'] as Map).values.toList()[index]['device']['manufacturer']} ${(me.data['devices'] as Map).values.toList()[index]['device']['model']}'),
+          title: Text('${me.devices.values.toList()[index]['device']['manufacturer']} ${me.devices.values.toList()[index]['device']['model']}'),
           subtitle: Text(
-            '${getTimeAgo(new DateTime.fromMillisecondsSinceEpoch(((me.data['devices'] as Map).values.toList()[index]['timestamp'])))}${((me.data['devices'] as Map).values.toList()[index]['timestamp'].toString() == me.loginTimestamp.toString()) ? '\nThis Device' : ''}'
+            '${getTimeAgo(new DateTime.fromMillisecondsSinceEpoch((me.devices.values.toList()[index]['timestamp'])))}${(me.devices.values.toList()[index]['timestamp'].toString() == me.loginTimestamp.toString()) ? '\nThis Device' : ''}'
           ),
           trailing: PopupMenuButton(
             itemBuilder: (context) => [
@@ -52,12 +52,12 @@ class _ManageDevicesState extends State<ManageDevices> {
                   await Loader.show(
                     context,
                     function: () async {
-                      if ((me.data['devices'] as Map).values.toList()[index]['timestamp'].toString() == me.loginTimestamp.toString()) {
+                      if (me.devices.values.toList()[index]['timestamp'].toString() == me.loginTimestamp.toString()) {
                         await me.signOut(context);
                         Navigator.of(context).pushAndRemoveUntil(RivalNavigator(page: SignIn()), (route) => false);
                       } else {
                         await me.update({
-                          'devices.${(me.data['devices'] as Map).values.toList()[index]['timestamp'].toString()}': FieldValue.delete()
+                          'devices.${me.devices.values.toList()[index]['timestamp'].toString()}': FieldValue.delete()
                         }, reload: true);
                       }
                     },

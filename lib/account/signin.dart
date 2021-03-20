@@ -39,15 +39,15 @@ class _SignInState extends State<SignIn> {
       body: WillPopScope(
         onWillPop: () async => showDialog(
           context: context,
-          child: AlertDialog(
+          builder: (context) => AlertDialog(
             title: Text('Exit'),
             content: Text('Are you sure you want quit?'),
             actions: [
-              FlatButton(
+              TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
                 child: Text('Cancel'),
               ),
-              FlatButton(
+              TextButton(
                 onPressed: () => SystemNavigator.pop(animated: true),
                 child: Text('Exit'),
               )
@@ -85,11 +85,9 @@ class _SignInState extends State<SignIn> {
                         padding: const EdgeInsets.symmetric(horizontal: 15),
                         child: SizedBox(
                           width: double.infinity,
-                          child: FlatButton(
-                            padding: EdgeInsets.symmetric(vertical: 15),
-                            color: isLoading ? Colors.indigoAccent.withOpacity(0.3) : Colors.indigoAccent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(3))
+                          child: TextButton(
+                            style: TextButton.styleFrom(
+                              backgroundColor: Colors.indigoAccent
                             ),
                             onPressed: () async {
                               if (!isLoading && _formKey.currentState.validate()) await next();
@@ -97,7 +95,7 @@ class _SignInState extends State<SignIn> {
                             child: isLoading ? Container(
                               height: 15,
                               width: 15,
-                              child: CircularProgressIndicator(strokeWidth: 1,)
+                              child: CustomProgressIndicator(strokeWidth: 1,)
                             ) : Text('Next', style: TextStyle(color: Colors.white),),
                           ),
                         ),
@@ -195,6 +193,7 @@ class _EnterPasswordState extends State<EnterPassword> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(),
       body: SafeArea(
         child: Center(
           child: Column(
@@ -210,7 +209,7 @@ class _EnterPasswordState extends State<EnterPassword> {
                     placeholderBuilder: (context) => Container(
                       height: 100,
                       width: 100,
-                      child: CircularProgressIndicator()
+                      child: CustomProgressIndicator()
                     ),
                   ),
                 ),
@@ -239,11 +238,13 @@ class _EnterPasswordState extends State<EnterPassword> {
                 padding: const EdgeInsets.symmetric(horizontal: 15),
                 child: SizedBox(
                   width: double.infinity,
-                  child: FlatButton(
-                    padding: EdgeInsets.symmetric(vertical: 15),
-                    color: isLoading ? Colors.indigoAccent.withOpacity(0.3) : Colors.indigoAccent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(3))
+                  child: TextButton(
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.symmetric(vertical: 15),
+                      backgroundColor: isLoading ? Colors.indigoAccent.withOpacity(0.3) : Colors.indigoAccent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(3))
+                      ),
                     ),
                     onPressed: () async {
                       await signIn();
@@ -251,7 +252,7 @@ class _EnterPasswordState extends State<EnterPassword> {
                     child: isLoading ? Container(
                       height: 15,
                       width: 15,
-                      child: CircularProgressIndicator(strokeWidth: 1,)
+                      child: CustomProgressIndicator(strokeWidth: 1,)
                     ) : Text('Sign In', style: TextStyle(color: Colors.white),),
                   ),
                 ),

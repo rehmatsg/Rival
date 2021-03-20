@@ -35,10 +35,10 @@ class _TestState extends State<Test> {
           if  (isLoading) Padding(
             padding: const EdgeInsets.symmetric(vertical: 20),
             child: Center(
-              child: CircularProgressIndicator()
+              child: CustomProgressIndicator()
             ),
           ),
-          if (allPosts == null && !isLoading) FlatButton(
+          if (allPosts == null && !isLoading) TextButton(
             onPressed: () async {
               setState(() {
                 isLoading = true;
@@ -51,7 +51,7 @@ class _TestState extends State<Test> {
             },
             child: Text('Load Posts')
           ),
-          if (allPosts != null && !isLoading) FlatButton(
+          if (allPosts != null && !isLoading) TextButton(
             onPressed: () async {
               setState(() {
                 isLoading = true;
@@ -100,7 +100,7 @@ class _Test2State extends State<Test2> {
       ),
       body: ListView(
         children: [
-          FlatButton(
+          TextButton(
             onPressed: () async {
               PickedFile pickedFile = await ImagePicker().getImage(source: ImageSource.gallery);
               image = File(pickedFile.path);
@@ -132,7 +132,7 @@ class _Test2State extends State<Test2> {
               return Container();
             },
           ),
-          FlatButton(
+          TextButton(
             onPressed: () {
               setState(() {
                 bg = btmp.brightness(bg, 1);

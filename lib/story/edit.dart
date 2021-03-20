@@ -101,7 +101,7 @@ class _EditStoryState extends State<EditStory> {
               borderRadius: BorderRadius.all(Radius.circular(10)),
               child: OctoImage(
                 image: NetworkImage(story.url),
-                placeholderBuilder: (context) => CircularProgressIndicator(),
+                placeholderBuilder: (context) => CustomProgressIndicator(),
               ),
             ),
           )
@@ -114,7 +114,7 @@ class _EditStoryState extends State<EditStory> {
                 child: Container(
                   height: 50,
                   width: 50,
-                  child: CircularProgressIndicator()
+                  child: CustomProgressIndicator()
                 )
               ),
             )
@@ -141,7 +141,7 @@ class _EditStoryState extends State<EditStory> {
                   child: Container(
                     width: 100,
                     height: 100,
-                    child: CircularProgressIndicator(),
+                    child: CustomProgressIndicator(),
                   ),
                 ),
               );
@@ -191,17 +191,16 @@ class _EditStoryState extends State<EditStory> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                OutlineButton.icon(
+                OutlinedButton.icon(
                   label: Text('Delete'),
                   icon: Icon(Icons.delete),
-                  splashColor: Colors.red.withOpacity(0.2),
                   onPressed: () => showDialog(
                     context: context,
                     builder: (context) => AlertDialog(
                       title: Text('Delete Story?'),
                       content: Text('This action cannot be undone. Are you sure you want to delete?'),
                       actions: [
-                        FlatButton(
+                        TextButton(
                           child: Text('Delete'),
                           onPressed: () async {
                             RivalProvider.vibrate();
@@ -215,7 +214,7 @@ class _EditStoryState extends State<EditStory> {
                             Navigator.of(context).pushAndRemoveUntil(RivalNavigator(page: Home()), (route) => false);
                           },
                         ),
-                        FlatButton(
+                        TextButton(
                           child: Text('Cancel'),
                           onPressed: () => Navigator.of(context).pop(),
                         )
@@ -254,7 +253,7 @@ class _EditStoryState extends State<EditStory> {
           //     children: [
           //       Padding(
           //         padding: EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-          //         child: OutlineButton(
+          //         child: OutlinedButton(
           //           onPressed: () async {
           //             RivalProvider.vibrate();
           //             Loader.show(
@@ -294,7 +293,7 @@ class _EditStoryState extends State<EditStory> {
           //     children: [
           //       Padding(
           //         padding: EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-          //         child: OutlineButton(
+          //         child: OutlinedButton(
           //           onPressed: () async {
           //             RivalProvider.vibrate();
           //             Loader.show(
@@ -324,7 +323,7 @@ class _EditStoryState extends State<EditStory> {
   _showColorPicker() {
     showDialog(
       context: context,
-      child: AlertDialog(
+      builder: (context) => AlertDialog(
         title: const Text('Select Background Color'),
         content: SingleChildScrollView(
           child: ColorPicker(
@@ -353,7 +352,7 @@ class _EditStoryState extends State<EditStory> {
           // ),
         ),
         actions: <Widget>[
-          FlatButton(
+          TextButton(
             child: const Text('Done'),
             onPressed: () {
               setState(() => currentColor = pickerColor);

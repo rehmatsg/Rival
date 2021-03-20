@@ -77,9 +77,9 @@ class _UsernameState extends State<Username> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  if (usernameEditable) OutlineButton(
+                  if (usernameEditable) OutlinedButton(
                     child: isLoading
-                    ? Container(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 1,),)
+                    ? Container(height: 20, width: 20, child: CustomProgressIndicator(strokeWidth: 1,),)
                     : Text('Save'),
                     onPressed: _save,
                   )

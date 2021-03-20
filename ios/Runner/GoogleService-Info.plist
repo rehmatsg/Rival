@@ -30,7 +30,5 @@
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
 	<string>1:12465513106:ios:4763c2a0371979e839bc4b</string>
-	<key>DATABASE_URL</key>
-	<string>https://rival-photography-default-rtdb.firebaseio.com</string>
 </dict>
 </plist>

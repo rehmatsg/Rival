@@ -110,16 +110,18 @@ class _BlockedUserTileState extends State<BlockedUserTile> {
           trailing: loaded ? (
             unblocked
             ? Text('Unblocked', style: TextStyle(color: Colors.indigoAccent),)
-            : FlatButton(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(Radius.circular(10))
+            : TextButton(
+              style: TextButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(10))
+                ),
+                backgroundColor: isUnblocking ? (MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.grey[100] : Colors.grey[900]) : Colors.indigoAccent,
               ),
-              color: isUnblocking ? (MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.grey[100] : Colors.grey[900]) : Colors.indigoAccent,
               child: isUnblocking ? Container(
                 height: 14,
                 width: 14,
-                child: CircularProgressIndicator(strokeWidth: 2,),
-              ) : Text('Unblock'),
+                child: CustomProgressIndicator(strokeWidth: 2,),
+              ) : Text('Unblock', style: TextStyle(color: Colors.white),),
               onPressed: () async {
                 setState(() {
                   isUnblocking = true;

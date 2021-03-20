@@ -38,7 +38,7 @@ class _EditNameState extends State<EditName> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            InkWell(
+            GestureDetector(
               onTap: _updatePhoto,
               child: Tooltip(
                 message: 'Change Profile Photo',
@@ -61,7 +61,7 @@ class _EditNameState extends State<EditName> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  OutlineButton(
+                  OutlinedButton(
                     onPressed: _save,
                     child: const Text('Save'),
                   )
@@ -98,11 +98,11 @@ class _EditNameState extends State<EditName> {
     } else if (!RivalRemoteConfig.allowNameChange) {
       showDialog(
         context: context,
-        child: AlertDialog(
+        builder: (context) => AlertDialog(
           title: Text('Error'),
           content: Text('Editing display name has been disabled for a limited time. Please try again later'),
           actions: [
-            FlatButton(
+            TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text('OK')
             )
@@ -123,7 +123,7 @@ class _EditNameState extends State<EditName> {
             await me.updateProfilePhoto(photo: croppedFile);
           },
           onComplete: () {
-            Navigator.of(context).pushAndRemoveUntil(RivalNavigator(page: Home()), (route) => false);
+            Navigator.of(context).pushAndRemoveUntil(RivalNavigator(page: LandingPage()), (route) => false);
           }
         );
       }

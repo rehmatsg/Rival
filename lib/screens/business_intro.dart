@@ -77,25 +77,25 @@ class _BusinessIntroState extends State<BusinessIntro> {
               ),
             ),
           ),
-          PageViewModel(
-            title: 'Shopping',
-            body: 'Promote your product by setting up shopping in Business section of your profile settings',
-            decoration: PageDecoration(
-              titleTextStyle: Theme.of(context).textTheme.headline4.copyWith(
-                fontFamily: RivalFonts.feature,
-                color: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black : Colors.white
-              )
-            ),
-            image: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 30),
-              child: SvgPicture.asset(
-                'assets/intro/business/shopping.svg',
-              ),
-            ),
-          ),
+          // PageViewModel(
+          //   title: 'Shopping',
+          //   body: 'Promote your product by setting up shopping in Business section of your profile settings',
+          //   decoration: PageDecoration(
+          //     titleTextStyle: Theme.of(context).textTheme.headline4.copyWith(
+          //       fontFamily: RivalFonts.feature,
+          //       color: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black : Colors.white
+          //     )
+          //   ),
+          //   image: Padding(
+          //     padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 30),
+          //     child: SvgPicture.asset(
+          //       'assets/intro/business/shopping.svg',
+          //     ),
+          //   ),
+          // ),
         ],
         onDone: () { },
-        done: FlatButton(
+        done: TextButton(
           child: me.isBusinessAccount ? Text('Done') : Text('Get Started'),
           onPressed: () async {
             if (!me.isBusinessAccount) {

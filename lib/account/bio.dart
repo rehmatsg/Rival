@@ -61,7 +61,7 @@ class _EditBioState extends State<EditBio> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  OutlineButton(
+                  OutlinedButton(
                     onPressed: _save,
                     child: const Text('Save'),
                   )

@@ -37,7 +37,7 @@ class _AddDOBState extends State<AddDOB> {
             padding: const EdgeInsets.symmetric(horizontal: 15),
             child: Row(
               children: [
-                OutlineButton(
+                OutlinedButton(
                   onPressed: () async {
                     
                   },

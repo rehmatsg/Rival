@@ -69,23 +69,21 @@ class _LinkPhoneNumberState extends State<LinkPhoneNumber> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  OutlineButton(
+                  OutlinedButton(
                     onPressed: isLoading ? null : _sendOTP,
                     child: isLoading
-                        ? Container(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation(
-                                  MediaQuery.of(context).platformBrightness ==
-                                          Brightness.light
-                                      ? Colors.black
-                                      : Colors.white),
-                            ))
-                        : Text('Send OTP'),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(10))),
+                      ? Container(
+                        width: 14,
+                        height: 14,
+                        child: CustomProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black : Colors.white,
+                        )
+                      )
+                      : Text('Send OTP'),
+                    style: OutlinedButton.styleFrom(  
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+                    )
                   )
                 ],
               ),
@@ -139,12 +137,10 @@ class _LinkPhoneNumberState extends State<LinkPhoneNumber> {
             isLoading = false;
             locked = false;
           });
-          _scaffoldKey.currentState.showSnackBar(SnackBar(
-              content: Text('Failed to verify. Please try again later')));
+          _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text('Failed to verify. Please try again later')));
         },
         codeSent: (String verificationId, int resendToken) {
-          _scaffoldKey.currentState.showSnackBar(SnackBar(
-              content: Text('OTP sent to $phone. Trying to Auto-Verify')));
+          _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text('OTP sent to $phone. Trying to Auto-Verify')));
           //Navigator.of(context).push(RivalNavigator(page: EnterOTP(verificationId: verificationId,), ));
         },
         codeAutoRetrievalTimeout: (String verificationId) async {
@@ -242,23 +238,21 @@ class _EnterOTPState extends State<EnterOTP> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  OutlineButton(
+                  OutlinedButton(
                     onPressed: isLoading ? null : _verifyOTP,
                     child: isLoading
-                        ? Container(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation(
-                                  MediaQuery.of(context).platformBrightness ==
-                                          Brightness.light
-                                      ? Colors.black
-                                      : Colors.white),
-                            ))
-                        : Text('Verify OTP'),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(10))),
+                      ? Container(
+                        width: 14,
+                        height: 14,
+                        child: CustomProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black : Colors.white,
+                        )
+                      )
+                      : Text('Verify OTP'),
+                    style: OutlinedButton.styleFrom(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+                    ),
                   )
                 ],
               ),

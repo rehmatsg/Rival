@@ -109,7 +109,7 @@ class LocationSearchDelegate extends SearchDelegate<Map> {
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Center(child: CircularProgressIndicator())
+            Center(child: CustomProgressIndicator())
           ],
         );
       },

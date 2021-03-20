@@ -29,7 +29,7 @@ class _MyPartnersState extends State<MyPartners> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Center(
-            child: CircularProgressIndicator(),
+            child: CustomProgressIndicator(),
           )
         ],
       )

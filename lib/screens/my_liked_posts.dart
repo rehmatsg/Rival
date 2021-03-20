@@ -47,11 +47,7 @@ class _LikedPostsState extends State<LikedPosts> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  height: 100,
-                  width: 100,
-                  child: CircularProgressIndicator(),
-                )
+                CustomProgressIndicator()
               ],
             ),
           );
@@ -62,7 +58,8 @@ class _LikedPostsState extends State<LikedPosts> {
 
   Future<List<Post>> _getMyLikedPosts() async {
     List<Post> posts = [];
-    List<DocumentSnapshot> docs = (await firestore.collection('posts').where('likes.${me.uid}', isGreaterThanOrEqualTo: 1).get()).docs;
+    List<DocumentSnapshot> docs = (await firestore.collection('posts').where('likes.${me.uid}.timestamp', isGreaterThanOrEqualTo: 1).get()).docs;
+    print(docs.length);
     for (DocumentSnapshot doc in docs) {
       Post post = await Post.fetch(doc: doc);
       posts.add(post);

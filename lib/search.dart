@@ -84,8 +84,7 @@ class RivalSearchDelegate extends SearchDelegate {
                     (index) => FutureBuilder(
                           future: Post.fetch(doc: querySnapshot.docs[index]),
                           builder: (context, snapshot) {
-                            if (snapshot.connectionState ==
-                                ConnectionState.done) {
+                            if (snapshot.connectionState == ConnectionState.done) {
                               return ViewPost(post: snapshot.data);
                             }
                             return Container();
@@ -98,11 +97,7 @@ class RivalSearchDelegate extends SearchDelegate {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  height: 100,
-                  width: 100,
-                  child: CircularProgressIndicator(),
-                )
+                CustomProgressIndicator()
               ],
             ),
           );
@@ -146,11 +141,7 @@ class RivalSearchDelegate extends SearchDelegate {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  height: 100,
-                  width: 100,
-                  child: CircularProgressIndicator(),
-                )
+                CustomProgressIndicator()
               ],
             ),
           );

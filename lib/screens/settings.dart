@@ -261,7 +261,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   title: Text('Log Out', style: TextStyle(fontFamily: RivalFonts.feature),),
                   content: const Text('Do you want to log out of your account?'),
                   actions: [
-                    FlatButton(
+                    TextButton(
                       onPressed: () async {
                         Navigator.of(_).pop();
                         await me.signOut(context);
@@ -269,7 +269,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       },
                       child: const Text('Sign Out'),
                     ),
-                    FlatButton(
+                    TextButton(
                       onPressed: () {
                         Navigator.of(_).pop(true);
                       },

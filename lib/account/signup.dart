@@ -83,14 +83,16 @@ class _SignUpState extends State<SignUp> {
                   padding: const EdgeInsets.symmetric(horizontal: 15),
                   child: SizedBox(
                     width: double.maxFinite,
-                    child: FlatButton(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4)
+                    child: TextButton(
+                      style: TextButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4)
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          vertical: 15
+                        ),
+                        backgroundColor: isUsernameLoading ? Colors.indigoAccent.withOpacity(0.3) : Colors.indigoAccent,
                       ),
-                      padding: EdgeInsets.symmetric(
-                        vertical: 15
-                      ),
-                      color: isUsernameLoading ? Colors.indigoAccent.withOpacity(0.3) : Colors.indigoAccent,
                       onPressed: () async {
                         if (!isUsernameLoading && usernameForm.currentState.validate()) {
                           setState(() {
@@ -116,7 +118,7 @@ class _SignUpState extends State<SignUp> {
                       child: isUsernameLoading ? Container(
                         height: 15,
                         width: 15,
-                        child: CircularProgressIndicator(strokeWidth: 1,)
+                        child: CustomProgressIndicator(strokeWidth: 1,)
                       ) : Text('Next', style: TextStyle(color: Colors.white),),
                     ),
                   ),
@@ -215,19 +217,18 @@ class _SignUpState extends State<SignUp> {
                     padding: const EdgeInsets.symmetric(horizontal: 15),
                     child: SizedBox(
                       width: double.maxFinite,
-                      child: FlatButton(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4)
+                      child: TextButton(
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.symmetric(
+                            vertical: 15
+                          ),
+                          backgroundColor: isUsernameLoading ? Colors.indigoAccent.withOpacity(0.3) : Colors.indigoAccent,
                         ),
-                        padding: EdgeInsets.symmetric(
-                          vertical: 15
-                        ),
-                        color: isUsernameLoading ? Colors.indigoAccent.withOpacity(0.3) : Colors.indigoAccent,
                         onPressed: isStep2Loading ? null : _signUp,
                         child: isStep2Loading ? Container(
                           height: 15,
                           width: 15,
-                          child: CircularProgressIndicator(strokeWidth: 1,)
+                          child: CustomProgressIndicator(strokeWidth: 1,)
                         ) : Text('Sign Up', style: TextStyle(color: Colors.white),),
                       ),
                     ),
@@ -259,9 +260,9 @@ class _SignUpState extends State<SignUp> {
     RegExp p2 = new RegExp(r'([a-zA-Z0-9._]{4,16})');
     if (!regex.hasMatch(value)) {
       if (!p1.hasMatch(value)) {
-        return 'Use only alphabets, numbers, underscore and dots';
+        return 'Use only alphanumerics, underscore and dots';
       } else if (!p2.hasMatch(value)) {
-        return 'Username must be between 4 and 16 characters';
+        return 'Minimum 4 and max 16 characters';
       } else return 'Invalid username';
     } else {
       return null;
@@ -333,139 +334,171 @@ class _SignUpState extends State<SignUp> {
     }
 
     // All good
-    bool result = await signUp(email: email, password: password, username: username);
-    if (result) {
-      setState(() {
+    String result = await signUp(email: email, password: password, username: username);
+    switch (result) {
+      case 'email-already-in-use':
+        emailError = 'Email already taken';
         isStep2Loading = false;
-      });
-      Navigator.pushAndRemoveUntil(context, RivalNavigator(page: SetupAccount(), ), (route) => false);
-    } else {
-      RivalProvider.showToast(text: 'Failed to login');
-      SystemNavigator.pop(animated: true);
+        setState(() { });
+        break;
+      case 'invalid-email':
+        emailError = 'Invalid Email';
+        isStep2Loading = false;
+        setState(() { });
+        break;
+      case 'operation-not-allowed':
+        emailError = 'Operation not allowed';
+        isStep2Loading = false;
+        setState(() { });
+        break;
+      case 'weak-password':
+        passwordError = 'Weak password';
+        isStep2Loading = false;
+        setState(() { });
+        break;
+      case 'permission-not-allowed':
+        emailError = 'Location permission denied';
+        isStep2Loading = false;
+        setState(() { });
+        break;
+      case 'success':
+        setState(() {
+          isStep2Loading = false;
+        });
+        Navigator.pushAndRemoveUntil(context, RivalNavigator(page: SetupAccount(), ), (route) => false);
+        break;
+      default:
+        isStep2Loading = false;
+        setState(() {});
+        RivalProvider.showToast(text: 'Failed to login');
+        SystemNavigator.pop(animated: true);
     }
   }
 
-  Future<bool> signUp({
+  Future<String> signUp({
     @required String username,
     @required String email,
     @required String password,
   }) async {
-    try {
+    // try {
       LocationData location = await getLocation();
       GeoPoint geoPoint = GeoPoint(location.latitude, location.longitude);
 
       if (location == null) {
         print('Location denied');
         RivalProvider.showToast(text: 'Location permission is required');
-        return false;
+        return 'permission-not-allowed';
       }
 
-      UserCredential result = await FirebaseAuth.instance.createUserWithEmailAndPassword(email: email, password: password);
-      await result.user.sendEmailVerification();
+      try {
+        UserCredential result = await FirebaseAuth.instance.createUserWithEmailAndPassword(email: email, password: password);
+        await result.user.sendEmailVerification();
 
-      DocumentSnapshot myDoc = await firestore.collection('users').doc(result.user.uid).get();
-      String token = await _firebaseMessaging.getToken();
+        DocumentSnapshot myDoc = await firestore.collection('users').doc(result.user.uid).get();
+        String token = await _firebaseMessaging.getToken();
 
-      await sharedPreferences.setString('token', token);
+        await sharedPreferences.setString('token', token);
 
-      await result.user.updateProfile(displayName: username);
+        await result.user.updateProfile(displayName: username);
 
-      DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-      Map<String, dynamic> info = {
-        'os': Platform.operatingSystem,
-        'version': Platform.operatingSystemVersion,
-      };
-      if (Platform.isAndroid) {
-        AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
-        info.addAll({
-          'model': androidInfo.model,
-          'device': androidInfo.device,
-          'isEmulator': !androidInfo.isPhysicalDevice,
-          'manufacturer': androidInfo.manufacturer,
-          'token': token
-        });
-      } else if (Platform.isIOS) {
-        IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
-        info.addAll({
-          'device': iosInfo.utsname.machine,
-          'model': iosInfo.localizedModel,
-          'isEmulator': !iosInfo.isPhysicalDevice,
-          'manufacturer': 'Apple',
-          'token': token
-        });
-      }
-
-      await myDoc.reference.set({
-        'uid': result.user.uid,
-        'displayName': username,
-        'photoUrl': result.user.photoURL,
-        'phoneNumber': result.user.phoneNumber,
-        'email': result.user.email,
-        'token': token,
-        'followers': [],
-        'following': [],
-        'bookmarks': [],
-        'blocked': [],
-        'posts': [],
-        'username': username,
-        'verified': false,
-        'account_created': result.user.metadata.creationTime.millisecondsSinceEpoch,
-        'bio': null,
-        'interests': {},
-        'private': false,
-        //'liked': [],
-        'category': null,
-        'gender': null,
-        'dob': null,
-        'allow_new_followers': true,
-        'follow_requests': {},
-        'story': {},
-        'type': 'personal',
-        'visits': [],
-        'showContactCall': false,
-        'showContactEmail': false,
-        'tagsSubscribed': [],
-        'subscriptions': [],
-        'devices': {
-          result.user.metadata.creationTime.millisecondsSinceEpoch.toString(): {
-            'location': geoPoint,
-            'timestamp': result.user.metadata.creationTime.millisecondsSinceEpoch,
-            'device': info,
+        DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+        Map<String, dynamic> info = {
+          'os': Platform.operatingSystem,
+          'version': Platform.operatingSystemVersion,
+        };
+        if (Platform.isAndroid) {
+          AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+          info.addAll({
+            'model': androidInfo.model,
+            'device': androidInfo.device,
+            'isEmulator': !androidInfo.isPhysicalDevice,
+            'manufacturer': androidInfo.manufacturer,
             'token': token
-          }
-        },
-        'loginHistory': {
-          result.user.metadata.creationTime.millisecondsSinceEpoch: {
-            'location': geoPoint,
-            'timestamp': result.user.metadata.creationTime.millisecondsSinceEpoch,
-            'device': info,
+          });
+        } else if (Platform.isIOS) {
+          IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
+          info.addAll({
+            'device': iosInfo.utsname.machine,
+            'model': iosInfo.localizedModel,
+            'isEmulator': !iosInfo.isPhysicalDevice,
+            'manufacturer': 'Apple',
             'token': token
-          }
+          });
         }
-      });
 
-      await firestore.collection('rival').doc('general').set({
-        'usernames': FieldValue.arrayUnion([username.toLowerCase().trim()])
-      });
+        await myDoc.reference.set({
+          'uid': result.user.uid,
+          'displayName': username,
+          'photoUrl': result.user.photoURL,
+          'phoneNumber': result.user.phoneNumber,
+          'email': result.user.email,
+          'token': token,
+          'followers': [],
+          'following': [],
+          'bookmarks': [],
+          'blocked': [],
+          'posts': [],
+          'username': username,
+          'verified': false,
+          'account_created': result.user.metadata.creationTime.millisecondsSinceEpoch,
+          'bio': null,
+          'interests': {},
+          'private': false,
+          //'liked': [],
+          'category': null,
+          'gender': null,
+          'dob': null,
+          'allow_new_followers': true,
+          'follow_requests': {},
+          'story': {},
+          'type': 'personal',
+          'visits': [],
+          'showContactCall': false,
+          'showContactEmail': false,
+          'tagsSubscribed': [],
+          'subscriptions': [],
+          'devices': {
+            result.user.metadata.creationTime.millisecondsSinceEpoch.toString(): {
+              'location': geoPoint,
+              'timestamp': result.user.metadata.creationTime.millisecondsSinceEpoch,
+              'device': info,
+              'token': token
+            }
+          },
+          'loginHistory': {
+            result.user.metadata.creationTime.millisecondsSinceEpoch.toString(): {
+              'location': geoPoint,
+              'timestamp': result.user.metadata.creationTime.millisecondsSinceEpoch,
+              'device': info,
+              'token': token
+            }
+          }
+        });
 
-      me = Me();
-      me.firebaseUser = result.user;
-      await me.init();
+        await firestore.collection('rival').doc('general').set({
+          'usernames': FieldValue.arrayUnion([username.toLowerCase().trim()])
+        });
 
-      isStep2Loading = false;
-      await RivalProvider.showToast(
-        text: 'Welcome $email',
-      );
-      await RivalProvider.showToast(
-        text: 'Verification email sent.',
-      );
+        me = Me();
+        me.firebaseUser = result.user;
+        await me.init();
 
-      return true;
+        isStep2Loading = false;
+        await RivalProvider.showToast(
+          text: 'Welcome $email',
+        );
+        await RivalProvider.showToast(
+          text: 'Verification email sent.',
+        );
 
-    } catch (e) {
-      print(e);
-      return false;
-    }
+        return 'success';
+      } on FirebaseAuthException catch (e) {
+        return e.code;
+      }
+    // } catch (e) {
+    //   print(e);
+    //   return 'unknown';
+    // }
   }
 
 }
@@ -536,9 +569,11 @@ class _SignUp2State extends State<SignUp2> {
                             onTap: () => Navigator.of(context).pop(),
                             child: Text('Already have an account? Sign In',),
                           ),
-                          OutlineButton(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(10))
+                          OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.all(Radius.circular(10))
+                              ),
                             ),
                             onPressed: () async {
                               if (!isLoading && _formKey.currentState.validate()) {
@@ -564,7 +599,7 @@ class _SignUp2State extends State<SignUp2> {
                             child: isLoading ? Container(
                               height: 15,
                               width: 15,
-                              child: CircularProgressIndicator(strokeWidth: 1,)
+                              child: CustomProgressIndicator(strokeWidth: 1,)
                             ) : Text('Next'),
                           )
                         ],
@@ -718,9 +753,11 @@ class _CreatePasswordState extends State<CreatePassword> {
                             style: TextStyle(color: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black : Colors.white),
                           ),
                         ),
-                        OutlineButton(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(10))
+                        OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.all(Radius.circular(10))
+                            ),
                           ),
                           onPressed: () {
                             if (_formKey.currentState.validate()) {
@@ -730,7 +767,7 @@ class _CreatePasswordState extends State<CreatePassword> {
                           child: isLoading ? Container(
                             height: 15,
                             width: 15,
-                            child: CircularProgressIndicator(strokeWidth: 1,)
+                            child: CustomProgressIndicator(strokeWidth: 1,)
                           ) : Text('Agree & Sign Up'),
                         )
                       ],

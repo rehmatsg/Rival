@@ -92,7 +92,7 @@
 //                         child: ClipOval(
 //                           child: OctoImage(
 //                             image: me.photoUrl != null ? NetworkImage(me.photoUrl) : AssetImage('assets/images/avatar.png'),
-//                             progressIndicatorBuilder: (context, progress) => CircularProgressIndicator(),
+//                             progressIndicatorBuilder: (context, progress) => CustomProgressIndicator(),
 //                             width: 40,
 //                             height: 40,
 //                           ),
@@ -184,7 +184,7 @@
 //                 Container(
 //                   width: 100,
 //                   height: 100,
-//                   child: CircularProgressIndicator(),
+//                   child: CustomProgressIndicator(),
 //                 )
 //               ],
 //             ),
@@ -198,7 +198,7 @@
 //             Container(
 //               height: 100,
 //               width: 100,
-//               child: CircularProgressIndicator()
+//               child: CustomProgressIndicator()
 //             )
 //           ]
 //         )
@@ -269,7 +269,7 @@
 //       ? ClipOval(
 //         child: OctoImage(
 //           image: NetworkImage(userDoc.data()['photoUrl']),
-//           progressIndicatorBuilder: (context, progress) => CircularProgressIndicator(),
+//           progressIndicatorBuilder: (context, progress) => CustomProgressIndicator(),
 //           width: 40,
 //           height: 40,
 //         ),

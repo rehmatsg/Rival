@@ -80,14 +80,14 @@ import '../app.dart';
 //               Row(
 //                 mainAxisAlignment: MainAxisAlignment.end,
 //                 children: [
-//                   FlatButton(
+//                   TextButton(
 //                     shape: RoundedRectangleBorder(
 //                       borderRadius: BorderRadius.all(Radius.circular(10))
 //                     ),
 //                     onPressed: () => Navigator.of(context).pop(),
 //                     child: Text('Go back')
 //                   ),
-//                   FlatButton(
+//                   TextButton(
 //                     shape: RoundedRectangleBorder(
 //                       borderRadius: BorderRadius.all(Radius.circular(10))
 //                     ),
@@ -104,7 +104,7 @@ import '../app.dart';
 //                     child: isLoading ? Container(
 //                       height: 15,
 //                       width: 15,
-//                       child: CircularProgressIndicator(strokeWidth: 1,)
+//                       child: CustomProgressIndicator(strokeWidth: 1,)
 //                     ) : Text('Unblock')
 //                   )
 //                 ],
@@ -174,7 +174,7 @@ import '../app.dart';
 //                                 title: Text('Report'),
 //                                 content: Text('Do you want to report @${user.username}? We won\'t tell them if you report. If we find something unusual, we\'ll block them. For detailed report mail us at help@rival.photography. @${user.username} will also be blocked after reporting'),
 //                                 actions: [
-//                                   FlatButton(
+//                                   TextButton(
 //                                     onPressed: () async {
 //                                       await user.report();
 //                                       setState(() {});
@@ -183,7 +183,7 @@ import '../app.dart';
 //                                     },
 //                                     child: Text('Report', style: TextStyle(color: Colors.red)),
 //                                   ),
-//                                   FlatButton(
+//                                   TextButton(
 //                                     onPressed: () => Navigator.of(context).pop(),
 //                                     child: Text('Cancel')
 //                                   )
@@ -227,7 +227,7 @@ import '../app.dart';
 //                                     image: NetworkImage(user.doc.data()['photoUrl'].toString()),
 //                                     height: MediaQuery.of(context).size.width * 0.2,
 //                                     width: MediaQuery.of(context).size.width * 0.2,
-//                                     progressIndicatorBuilder: (context, progress) => const CircularProgressIndicator(),
+//                                     progressIndicatorBuilder: (context, progress) => const CustomProgressIndicator(),
 //                                   )
 //                                 ),
 //                               ),
@@ -239,7 +239,7 @@ import '../app.dart';
 //                             image: NetworkImage(user.doc.data()['photoUrl'].toString()),
 //                             height: MediaQuery.of(context).size.width * 0.2,
 //                             width: MediaQuery.of(context).size.width * 0.2,
-//                             progressIndicatorBuilder: (context, progress) => const CircularProgressIndicator(),
+//                             progressIndicatorBuilder: (context, progress) => const CustomProgressIndicator(),
 //                           )
 //                         )
 //                       )
@@ -470,7 +470,7 @@ import '../app.dart';
 //                           if (snapshot.connectionState == ConnectionState.active) {
 //                             final DocumentSnapshot userDocUpdated = snapshot.data;
 //                             user = RivalUser(doc: userDocUpdated);
-//                             return OutlineButton(
+//                             return OutlinedButton(
 //                               shape: const RoundedRectangleBorder(
 //                                 borderRadius: BorderRadius.all(Radius.circular(10))
 //                               ),
@@ -482,11 +482,11 @@ import '../app.dart';
 //                               child: Text(user.followUnfollow),
 //                             );
 //                           }
-//                           return OutlineButton(
+//                           return OutlinedButton(
 //                             shape: const RoundedRectangleBorder(
 //                               borderRadius: BorderRadius.all(Radius.circular(10))
 //                             ),
-//                             child: Container(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2,)),
+//                             child: Container(height: 20, width: 20, child: CustomProgressIndicator(strokeWidth: 2,)),
 //                             onPressed: () {
                               
 //                             },
@@ -498,7 +498,7 @@ import '../app.dart';
 //                     Container(
 //                       width: MediaQuery.of(context).size.width * 0.5 - 30,
 //                       // ignore: missing_required_param
-//                       child: const OutlineButton(
+//                       child: const OutlinedButton(
 //                         shape: RoundedRectangleBorder(
 //                           borderRadius: BorderRadius.all(Radius.circular(10))
 //                         ),
@@ -544,7 +544,7 @@ import '../app.dart';
 //                                             child: Container(
 //                                               width: MediaQuery.of(context).size.width * 0.1,
 //                                               height: MediaQuery.of(context).size.width * 0.1,
-//                                               child: const CircularProgressIndicator(strokeWidth: 2),
+//                                               child: const CustomProgressIndicator(strokeWidth: 2),
 //                                             ),
 //                                           );
 //                                         },
@@ -560,7 +560,7 @@ import '../app.dart';
 //                                   child: Container(
 //                                     width: MediaQuery.of(context).size.width * 0.15,
 //                                     height: MediaQuery.of(context).size.width * 0.15,
-//                                     child: CircularProgressIndicator(strokeWidth: 2),
+//                                     child: CustomProgressIndicator(strokeWidth: 2),
 //                                   ),
 //                                 ),
 //                               );
@@ -577,7 +577,7 @@ import '../app.dart';
 //                   ? (
 //                     isLoading
 //                     ? Container(
-//                       child: CircularProgressIndicator(),
+//                       child: CustomProgressIndicator(),
 //                     )
 //                     : Container(
 //                       child: Row(
@@ -862,7 +862,7 @@ import '../app.dart';
 //                 children: [
 //                   Container(
 //                     width: MediaQuery.of(context).size.width * 0.5 - 30,
-//                     child: OutlineButton(
+//                     child: OutlinedButton(
 //                       onPressed: () => Navigator.of(context).push(RivalNavigator(page: Account(),)),
 //                       shape: RoundedRectangleBorder(
 //                         borderRadius: BorderRadius.all(Radius.circular(10))
@@ -873,7 +873,7 @@ import '../app.dart';
 //                   ),
 //                   Container(
 //                     width: MediaQuery.of(context).size.width * 0.5 - 30,
-//                     child: OutlineButton(
+//                     child: OutlinedButton(
 //                       onPressed: () => Navigator.of(context).push(RivalNavigator(page: SettingsPage(),)),
 //                       shape: RoundedRectangleBorder(
 //                         borderRadius: BorderRadius.all(Radius.circular(10))
@@ -919,7 +919,7 @@ import '../app.dart';
 //                                       child: Container(
 //                                         width: MediaQuery.of(context).size.width * 0.1,
 //                                         height: MediaQuery.of(context).size.width * 0.1,
-//                                         child: CircularProgressIndicator(strokeWidth: 2),
+//                                         child: CustomProgressIndicator(strokeWidth: 2),
 //                                       ),
 //                                     );
 //                                   },
@@ -1068,23 +1068,16 @@ class _ProfilePageState extends State<ProfilePage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    FlatButton(
+                    TextButton(
                       child: Text('Go Back', style: TextStyle(color: Colors.indigoAccent)),
                       onPressed: () => Navigator.of(context).pop(),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(10))
-                      ),
                     ),
-                    FlatButton(
+                    TextButton(
                       child: Text('Unblock', style: TextStyle(color: Colors.white)),
                       onPressed: () async {
                         await user.blockUnblock();
                         setState(() {});
                       },
-                      color: Colors.indigoAccent,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(10))
-                      ),
                     ),
                   ],
                 )
@@ -1135,8 +1128,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   child: Container(
                     width: 50,
                     height: 50,
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation(Colors.white)
+                    child: CustomProgressIndicator(
+                      valueColor: Colors.white
                     )
                   ),
                 ),
@@ -1181,11 +1174,11 @@ class _ProfilePageState extends State<ProfilePage> {
                 ],
               ),
             ),
-            ListTile(
-              leading: Icon(Icons.bookmark_rounded),
-              title: Text('Bookmarks'),
-              onTap: () => Navigator.of(context).push(RivalNavigator(page: BookmarkedPosts(),))
-            ),
+            // ListTile(
+            //   leading: Icon(Icons.bookmark_rounded),
+            //   title: Text('Bookmarks'),
+            //   onTap: () => Navigator.of(context).push(RivalNavigator(page: BookmarkedPosts(),))
+            // ),
             ListTile(
               leading: Icon(FontAwesome.hashtag),
               title: Text('Tag Subscriptions'),
@@ -1256,11 +1249,11 @@ class _ProfilePageState extends State<ProfilePage> {
                             case 'report':
                               showDialog(
                                 context: context,
-                                child: AlertDialog(
+                                builder: (context) => AlertDialog(
                                   title: Text('Report'),
                                   content: Text('Do you want to report @${user.username}? We won\'t tell them if you report. If we find something unusual, we\'ll block them. For detailed report mail us at help@rival.photography. @${user.username} will also be blocked after reporting'),
                                   actions: [
-                                    FlatButton(
+                                    TextButton(
                                       onPressed: () async {
                                         await user.report();
                                         setState(() {});
@@ -1269,7 +1262,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                       },
                                       child: Text('Report', style: TextStyle(color: Colors.red)),
                                     ),
-                                    FlatButton(
+                                    TextButton(
                                       onPressed: () => Navigator.of(context).pop(),
                                       child: Text('Cancel')
                                     )
@@ -1309,7 +1302,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         image: user.photo,
                         width: 80,
                         height: 80,
-                        placeholderBuilder: (context) => CircularProgressIndicator(),
+                        placeholderBuilder: (context) => CustomProgressIndicator(),
                       ),
                     ),
                     Container(width: 15,),
@@ -1407,10 +1400,11 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ),
                     GestureDetector(
-                      onTap: () {
+                      onTap: () async {
                         if (isCurrentUser || !user.private || (user.private && user.isFollowing)) {
                           RivalProvider.vibrate();
-                          Navigator.of(context).push(RivalNavigator(page: Followers(user: user,)));
+                          await Navigator.of(context).push(RivalNavigator(page: Followers(user: user,)));
+                          setState(() {});
                         }
                       },
                       child: Container(
@@ -1491,9 +1485,11 @@ class _ProfilePageState extends State<ProfilePage> {
                       fit: FlexFit.tight,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 3),
-                        child: FlatButton(
-                          child: isUserButton1Loading ? Container(width: Theme.of(context).textTheme.button.fontSize, height: Theme.of(context).textTheme.button.fontSize, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white),)) : Text(user.followUnfollow, style: TextStyle(color: Colors.white),),
-                          color: Colors.indigoAccent,
+                        child: TextButton(
+                          style: TextButton.styleFrom(
+                            backgroundColor: Colors.indigoAccent
+                          ),
+                          child: isUserButton1Loading ? Container(width: Theme.of(context).textTheme.button.fontSize, height: Theme.of(context).textTheme.button.fontSize, child: CustomProgressIndicator(strokeWidth: 2, valueColor: Colors.white,)) : Text(user.followUnfollow, style: TextStyle(color: Colors.white),),
                           onPressed: (user.amIBlocked && !isUserButton1Loading)
                             ? null // Do Nothing if I am blocked
                             : () async { // Else Follow / Unfollow / Request
@@ -1512,7 +1508,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       fit: FlexFit.tight,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 3),
-                        child: OutlineButton(
+                        child: OutlinedButton(
                           child: Text('Call'),
                           onPressed: () async {
                             if (await canLaunch('tel:${user.phoneNumber}')) {
@@ -1526,7 +1522,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       fit: FlexFit.tight,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 3),
-                        child: OutlineButton(
+                        child: OutlinedButton(
                           child: Text('Email'),
                           onPressed: () async {
                             if (await canLaunch('mailto:${user.email}')) {
@@ -1546,8 +1542,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   children: <Widget>[
                     // Container(
                     //   width: (MediaQuery.of(context).size.width / 2) - 22.5,
-                    //   child: OutlineButton(
-                    //     child: isCurrentUser ? Text('Account') : (isUserButton1Loading ? Container(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2,)) : Text(user.followUnfollow)),
+                    //   child: OutlinedButton(
+                    //     child: isCurrentUser ? Text('Account') : (isUserButton1Loading ? Container(width: 14, height: 14, child: CustomProgressIndicator(strokeWidth: 2,)) : Text(user.followUnfollow)),
                     //     onPressed: isCurrentUser
                     //     ? () => Navigator.of(context).push(RivalNavigator(page: Account(),)) // IF Current User
                     //     : (
@@ -1570,7 +1566,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     // ),
                     // Container(
                     //   width: (MediaQuery.of(context).size.width / 2) - 22.5,
-                    //   child: OutlineButton(
+                    //   child: OutlinedButton(
                     //     child: Text(isCurrentUser ? 'Settings' : 'Message'),
                     //     onPressed: isCurrentUser ? () => Navigator.of(context).push(RivalNavigator(page: SettingsPage(),)) : null,
                     //     shape: RoundedRectangleBorder(
@@ -1609,8 +1605,8 @@ class _ProfilePageState extends State<ProfilePage> {
                         child: Container(
                           width: 50,
                           height: 50,
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation(MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black : Colors.white),
+                          child: CustomProgressIndicator(
+                            valueColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black : Colors.white,
                           ),
                         ),
                       ),
@@ -1618,12 +1614,12 @@ class _ProfilePageState extends State<ProfilePage> {
                   }
                 },
               ),
-              if (!arePostsLoading && user.posts.length >= 3) ... [
+              if (!arePostsLoading && user.posts.length >= 3 && ((user.uid != me.uid && user.private && user.isFollowing) || (user.uid != me.uid && !user.private) || user.uid == me.uid)) ... [
                 Divider(),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    FlatButton(
+                    TextButton(
                       onPressed: () {
                         if (isCurrentUser) {
                           RivalProvider.vibrate();
@@ -1634,7 +1630,6 @@ class _ProfilePageState extends State<ProfilePage> {
                         }
                       },
                       child: Text('View all posts'),
-                      splashColor: Colors.indigoAccent.withOpacity(0.3)
                     )
                   ],
                 )
@@ -1728,7 +1723,7 @@ class _ProfilePageState extends State<ProfilePage> {
 //               child: InkWell(
 //                 child: OctoImage(
 //                   image: CachedNetworkImageProvider(posts[index].images[0]),
-//                   placeholderBuilder: (context) => CircularProgressIndicator(),
+//                   placeholderBuilder: (context) => CustomProgressIndicator(),
 //                   fit: BoxFit.cover,
 //                 ),
 //                 onTap: () => Navigator.of(context).push(RivalNavigator(page: SinglePostView(post: posts[index]),))
@@ -1742,7 +1737,7 @@ class _ProfilePageState extends State<ProfilePage> {
 //               child: Container(
 //                 width: 50,
 //                 height: 50,
-//                 child: CircularProgressIndicator(
+//                 child: CustomProgressIndicator(
 //                   strokeWidth: 2,
 //                 ),
 //               ),
@@ -1777,7 +1772,7 @@ class _ProfilePageState extends State<ProfilePage> {
 //               return InkWell(
 //                 child: OctoImage(
 //                   image: NetworkImage(snapshot.data.images[0]),
-//                   placeholderBuilder: (context) => CircularProgressIndicator(),
+//                   placeholderBuilder: (context) => CustomProgressIndicator(),
 //                   fit: BoxFit.cover,
 //                 ),
 //                 onTap: () => Navigator.of(context).push(RivalNavigator(page: SinglePostView(post: snapshot.data),))

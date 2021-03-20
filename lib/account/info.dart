@@ -56,7 +56,10 @@ class _InfoState extends State<Info> {
             ListTile(
               title: Text('Category'),
               subtitle: Text(me.category ?? 'Tap to add a category'),
-              onTap: () => Navigator.of(context).push(RivalNavigator(page: BusinessCategory())),
+              onTap: () async {
+                await Navigator.of(context).push(RivalNavigator(page: BusinessCategory()));
+                setState(() {});
+              }
             ),
           ],
         ),

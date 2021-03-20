@@ -447,7 +447,7 @@ class StoryItem {
                             return CustomPostView(
                                 id: postId, controller: controller);
                           }
-                          return CircularProgressIndicator();
+                          return CustomProgressIndicator();
                         },
                       ),
                     ],
@@ -870,7 +870,7 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
                                 height: 40,
                                 image: widget.avatar,
                                 placeholderBuilder: (context) =>
-                                    CircularProgressIndicator(),
+                                    CustomProgressIndicator(),
                               ),
                             ),
                             title: Text(widget.username,
@@ -1179,8 +1179,8 @@ class _CustomPostViewState extends State<CustomPostView> {
             ? Container(
                 width: 70,
                 height: 70,
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                child: CustomProgressIndicator(
+                  valueColor: Colors.white,
                   strokeWidth: 3,
                 ),
               )

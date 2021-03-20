@@ -115,7 +115,7 @@ class _AccountInsightsState extends State<AccountInsights> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Center(
-                                  child: CircularProgressIndicator(),
+                                  child: CustomProgressIndicator(),
                                 )
                               ],
                             ),
@@ -180,7 +180,7 @@ class _AccountInsightsState extends State<AccountInsights> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Center(
-                                  child: CircularProgressIndicator(),
+                                  child: CustomProgressIndicator(),
                                 )
                               ],
                             ),
@@ -387,7 +387,7 @@ class WeekdayInsight {
 //         child: Column(
 //           mainAxisAlignment: MainAxisAlignment.center,
 //           children: [
-//             CircularProgressIndicator()
+//             CustomProgressIndicator()
 //           ],
 //         )
 //       )

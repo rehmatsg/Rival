@@ -47,7 +47,7 @@ class _CommentedPostsState extends State<CommentedPosts> {
                 Container(
                   height: 100,
                   width: 100,
-                  child: CircularProgressIndicator(),
+                  child: CustomProgressIndicator(),
                 )
               ],
             ),

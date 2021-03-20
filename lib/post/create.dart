@@ -9,12 +9,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:expandable/expandable.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_ml_vision/firebase_ml_vision.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_native_image/flutter_native_image.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:liquid_progress_indicator/liquid_progress_indicator.dart';
 import 'package:location/location.dart';
 import 'package:octo_image/octo_image.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
@@ -33,10 +31,6 @@ List<String> actionButtons = [
   'Visit',
   'Learn More'
 ];
-
-/// Return [true] if a post is in middle of being created.
-/// Don't allow new posts if a previous post is being created
-bool isPostBeingCreated = false;
 
 class CreatePost extends StatefulWidget {
   CreatePost({Key key, this.sharedMediaFiles}) : super(key: key);
@@ -127,8 +121,7 @@ class _CreatePostState extends State<CreatePost> {
         });
       },
     );
-    if (me.isCreatorAccount)
-      noOfImages = 15; // 15 images per page if I am a creator
+    if (me.isCreatorAccount) noOfImages = 15; // 15 images per page if I am a creator
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _handleSharedMedia());
   }
@@ -141,74 +134,36 @@ class _CreatePostState extends State<CreatePost> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      key: _scaffoldKey,
-      appBar: AppBar(
-        title: Text(
-          title,
-          style: TextStyle(fontFamily: RivalFonts.feature, fontSize: 20),
-        ),
-        actions: <Widget>[
-          if (!isLoading && !isLoadingX) IconButton(
-            icon: Icon(Icons.check_circle),
-            tooltip: 'Finish',
-            onPressed: () {
-              if (_formKey.currentState.validate() && items.isNotEmpty) {
-                _post();
-              }
-            },
+    return IgnorePointer(
+      ignoring: isLoading,
+      child: Scaffold(
+        key: _scaffoldKey,
+        appBar: AppBar(
+          title: Text(
+            title,
+            style: TextStyle(fontFamily: RivalFonts.feature, fontSize: 20),
           ),
-          if (isLoadingX) Padding(
-            padding: EdgeInsets.symmetric(vertical: 15, horizontal: 10),
-            child: Container(
-              width: 25,
-              height: 15,
-              child: CircularProgressIndicator(),
+          actions: <Widget>[
+            if (!isLoading && !isLoadingX) IconButton(
+              icon: Icon(Icons.check_circle),
+              tooltip: 'Finish',
+              onPressed: () {
+                if (_formKey.currentState.validate() && items.isNotEmpty) {
+                  _post();
+                }
+              },
             ),
-          )
-        ],
-      ),
-      body: WillPopScope(
-        onWillPop: () async {
-          if ((items.length > 0 || _subtitleCtrl.text != "" || _descriptionCtrl.text != "") && !isLoading) {
-            return await showDialog(
-              context: context,
-              child: AlertDialog(
-                title: Text('Discard Changes'),
-                content: Text('Post will be discarded. This step cannot be undone'),
-                actions: [
-                  FlatButton(
-                    child: Text('Cancel'),
-                    onPressed: () => Navigator.of(context).maybePop(false),
-                  ),
-                  FlatButton(
-                    child: Text('Discard'),
-                    onPressed: () => Navigator.of(context).maybePop(true)
-                  )
-                ],
-              )
-            );
-          } else if (isLoading) {
-            return await showDialog(
-                context: context,
-                child: AlertDialog(
-                  title: Text('Return'),
-                  content: Text(
-                      'Creating Post. Meanwhile you can go back and the process will continue in background.'),
-                  actions: [
-                    FlatButton(
-                      child: Text('Stay'),
-                      onPressed: () => Navigator.of(context).maybePop(false),
-                    ),
-                    FlatButton(
-                        child: Text('Go Back'),
-                        onPressed: () => Navigator.of(context).maybePop(true))
-                  ],
-                ));
-          }
-          return true;
-        },
-        child: !isLoading ? ListView(
+            if (isLoadingX) Padding(
+              padding: EdgeInsets.symmetric(vertical: 15, horizontal: 10),
+              child: Container(
+                width: 25,
+                height: 15,
+                child: CustomProgressIndicator(),
+              ),
+            )
+          ],
+        ),
+        body: ListView(
           children: <Widget>[
             Center(
               child: Column(
@@ -231,19 +186,6 @@ class _CreatePostState extends State<CreatePost> {
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        IconButton(
-                                          onPressed: () async {
-                                            File edited = await Navigator.of(context).push(RivalNavigator(
-                                              page: RivalImageEditor(
-                                                image: items[index]['file'],
-                                              ),
-                                            ));
-                                            if (edited != null) setState(() {
-                                              items[index]['file'] = edited;
-                                            });
-                                          },
-                                          icon: Icon(Icons.edit),
-                                        ),
                                         IconButton(
                                           icon: Icon(Icons.delete),
                                           tooltip: 'Remove Image',
@@ -303,73 +245,73 @@ class _CreatePostState extends State<CreatePost> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: <Widget>[
-                                // PopupMenuButton(
-                                //   tooltip: 'Add Item',
-                                //   itemBuilder: (context) => <PopupMenuItem>[
-                                //     PopupMenuItem(
-                                //       child: Text('Image'),
-                                //       value: 'image',
-                                //     ),
-                                //     // Polls are disabled beacuse Cloud Firestore does not support
-                                //     // updating values in list
-                                //     // due to which votes cannot be cast
-                                //     // ignore: dead_code
-                                //     if (false) PopupMenuItem(
-                                //       child: Text('Poll'),
-                                //       value: 'poll',
-                                //     ),
-                                //     if (me.isCreatorAccount) PopupMenuItem(
-                                //       child: Text('Creator'),
-                                //       value: 'creator',
-                                //     )
-                                //   ],
-                                //   icon: Icon(Icons.add_circle, size: 50,),
-                                //   padding: EdgeInsets.zero,
-                                //   onSelected: (value) async {
-                                //     switch (value) {
-                                //       case 'image':
-                                //         _selectImage(index);
-                                //         break;
-                                //       case 'creator':
-                                //         File image = await Navigator.of(context).push(RivalNavigator(page: PostCreator()));
-                                //         if (image != null) {
-                                //           _selectImage(index, file: image);
-                                //         }
-                                //         break;
-                                //       case 'poll':
-                                //         if (items.indexWhere((item) => item['type'] == 'poll') >= 0) {
-                                //           showDialog(
-                                //             context: context,
-                                //             child: AlertDialog(
-                                //               title: Text('Poll Already Added'),
-                                //               content: Text('Your post already has one poll. You cannot add more than one poll.'),
-                                //               actions: [
-                                //                 FlatButton(
-                                //                   child: Text('Ok'),
-                                //                   onPressed: Navigator.of(context).pop,
-                                //                 )
-                                //               ],
-                                //             ),
-                                //           );
-                                //         } else {
-                                //           Map pollData = await Navigator.of(context).push(RivalNavigator(page: CreatePoll()));
-                                //           print(pollData);
-                                //           if (pollData != null) items.add({
-                                //             'type': 'poll',
-                                //             'poll': pollData
-                                //           });
-                                //         }
-                                //         break;
-                                //       default:
-                                //     }
-                                //   },
-                                // ),
-                                IconButton(
+                                PopupMenuButton(
+                                  tooltip: 'Add Item',
+                                  itemBuilder: (context) => <PopupMenuItem>[
+                                    PopupMenuItem(
+                                      child: Text('Image'),
+                                      value: 'image',
+                                    ),
+                                    // Polls are disabled beacuse Cloud Firestore does not support
+                                    // updating values in list
+                                    // due to which votes cannot be cast
+                                    // ignore: dead_code
+                                    if (false) PopupMenuItem(
+                                      child: Text('Poll'),
+                                      value: 'poll',
+                                    ),
+                                    if (me.isCreatorAccount) PopupMenuItem(
+                                      child: Text('Creator'),
+                                      value: 'creator',
+                                    )
+                                  ],
                                   icon: Icon(Icons.add_circle, size: 50,),
-                                  tooltip: 'Tap to add image',
                                   padding: EdgeInsets.zero,
-                                  onPressed: () => _selectImage(index),
+                                  onSelected: (value) async {
+                                    switch (value) {
+                                      case 'image':
+                                        _selectImage(index);
+                                        break;
+                                      case 'creator':
+                                        File image = await Navigator.of(context).push(RivalNavigator(page: PostCreator()));
+                                        if (image != null) {
+                                          _selectImage(index, file: image);
+                                        }
+                                        break;
+                                      case 'poll':
+                                        if (items.indexWhere((item) => item['type'] == 'poll') >= 0) {
+                                          showDialog(
+                                            context: context,
+                                            builder: (context) => AlertDialog(
+                                              title: Text('Poll Already Added'),
+                                              content: Text('Your post already has one poll. You cannot add more than one poll.'),
+                                              actions: [
+                                                TextButton(
+                                                  child: Text('Ok'),
+                                                  onPressed: Navigator.of(context).pop,
+                                                )
+                                              ],
+                                            ),
+                                          );
+                                        } else {
+                                          Map pollData = await Navigator.of(context).push(RivalNavigator(page: CreatePoll()));
+                                          print(pollData);
+                                          if (pollData != null) items.add({
+                                            'type': 'poll',
+                                            'poll': pollData
+                                          });
+                                        }
+                                        break;
+                                      default:
+                                    }
+                                  },
                                 ),
+                                // IconButton(
+                                //   icon: Icon(Icons.add_circle, size: 50,),
+                                //   tooltip: 'Tap to add image',
+                                //   padding: EdgeInsets.zero,
+                                //   onPressed: () => _selectImage(index),
+                                // ),
                                 Text(
                                   'Add Image', // 'Add Item',
                                   style: TextStyle(
@@ -552,7 +494,7 @@ class _CreatePostState extends State<CreatePost> {
                           //       ? ClipOval(
                           //         child: OctoImage(
                           //           image: NetworkImage(peopleDocs[index].data()['photoUrl']),
-                          //           progressIndicatorBuilder: (context, progress) => CircularProgressIndicator(),
+                          //           progressIndicatorBuilder: (context, progress) => CustomProgressIndicator(),
                           //         ),
                           //       )
                           //       : ClipOval(child: Image.asset('assets/images/avatar.png')),
@@ -805,7 +747,7 @@ class _CreatePostState extends State<CreatePost> {
                                   child: OctoImage(
                                     image: sponsor.photo,
                                     placeholderBuilder: (context) =>
-                                        CircularProgressIndicator(),
+                                        CustomProgressIndicator(),
                                   ),
                                 ),
                                 onDeleted: () {
@@ -835,14 +777,14 @@ class _CreatePostState extends State<CreatePost> {
                       children: <Widget>[
                         Padding(
                           padding: EdgeInsets.only(right: 10),
-                          child: FlatButton(
+                          child: TextButton(
                             child: Text('Save as draft'),
                             onPressed: () {},
                           ),
                         ),
                         Padding(
                           padding: EdgeInsets.only(right: 10),
-                          child: OutlineButton(
+                          child: OutlinedButton(
                             child: Text('Post'),
                             onPressed: _post,
                           ),
@@ -855,38 +797,7 @@ class _CreatePostState extends State<CreatePost> {
             ),
           ],
         )
-        : Center(
-            child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Container(
-                height: 100,
-                width: 100,
-                child: LiquidCircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation(Colors.indigoAccent),
-                  backgroundColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black12 : Colors.white12,
-                ),
-              ),
-              Container(
-                height: 20,
-              ),
-              // OutlineButton(
-              //   child: Text('Cancel'),
-              //   onPressed: () {
-              //     setState(() {
-              //       isPostBeingCreated = false;
-              //       isLoading = false;
-              //     });
-              //   },
-              // ),
-              Text(
-                loadingState != null ? loadingState : '...',
-                style: TextStyle(fontFamily: RivalFonts.feature, fontSize: 20),
-              )
-            ],
-          )
-        ),
-      )
+      ),
     );
   }
 
@@ -954,8 +865,7 @@ class _CreatePostState extends State<CreatePost> {
           _scaffoldKey.currentState.showSnackBar(
               new SnackBar(content: Text('@$username already added')));
         } else if (personDoc.id == me.user.uid) {
-          _scaffoldKey.currentState
-              .showSnackBar(new SnackBar(content: Text('Cannot tag yourself')));
+          _scaffoldKey.currentState.showSnackBar(new SnackBar(content: Text('Cannot tag yourself')));
         } else {
           // Add the person
           // Check if the account is private or if the person has blocked user
@@ -1098,118 +1008,129 @@ class _CreatePostState extends State<CreatePost> {
 
     if (!me.user.emailVerified) {
       SnackBar snackbar = SnackBar(
-          content: Text('Please verify your email to create a new post'));
+        content: Text('Please verify your email to create a new post'),
+        action: SnackBarAction(
+          label: 'Refresh',
+          onPressed: () async {
+            await Navigator.of(context).push(RivalNavigator(page: EmailPage()));
+            setState(() {});
+          }
+        ),
+      );
       _scaffoldKey.currentState.showSnackBar(snackbar);
     } else if (me.username == null) {
-      SnackBar snackbar =
-          SnackBar(content: Text('Your account does not have a username'));
+      SnackBar snackbar = SnackBar(content: Text('Your account does not have a username'));
       _scaffoldKey.currentState.showSnackBar(snackbar);
     } else if (!(await checkInternetConnectivity())) {
       SnackBar snackbar = SnackBar(content: Text('No Internet Connection'));
       _scaffoldKey.currentState.showSnackBar(snackbar);
-    } else if (me.user.emailVerified && me.username != null && me.username != '' && (me.uid == "EQs5vlC8U1XWqJxdR3dHPgUrx413" || RivalRemoteConfig.allowNewPost) && await checkInternetConnectivity() && !isPostBeingCreated) {
-      isPostBeingCreated = true;
+    } else if (me.user.emailVerified && me.username != null && me.username != '' && (me.uid == "EQs5vlC8U1XWqJxdR3dHPgUrx413" || RivalRemoteConfig.allowNewPost) && await checkInternetConnectivity()) {
       if (items.length > 0) {
-        List<String> keywords = [
-          me.username
-        ]; // Add a few keywords to make the post searchable.
+        
+        await Loader.show(
+          context,
+          function: () async {
+            List<String> keywords = [
+              me.username
+            ]; // Add a few keywords to make the post searchable.
 
-        tags.addAll(_descriptionCtrl.text
-          .replaceAll(new RegExp(RivalRegex.specialChars), '')
-          .replaceAll('\n', ' ')
-          .replaceAll('.', '')
-          .toLowerCase()
-          .split(' '));
-        tags = tags.toSet().toList(); // Removes all duplicate values
+            tags.addAll(_descriptionCtrl.text
+              .replaceAll(new RegExp(RivalRegex.specialChars), '')
+              .replaceAll('\n', ' ')
+              .replaceAll('.', '')
+              .toLowerCase()
+              .split(' '));
+            tags = tags.toSet().toList(); // Removes all duplicate values
 
-        List<String> mentions = [];
-        for (String username in _descriptionCtrl.text
-          .replaceAll(new RegExp(RivalRegex.specialChars), '')
-          .replaceAll('\n', ' ')
-          .toLowerCase()
-          .split(' ')) {
-          if (RegExp(RivalRegex.username).hasMatch(username)) mentions.add(username.replaceAll('@', ''));
-        }
+            List<String> mentions = [];
+            for (String username in _descriptionCtrl.text
+              .replaceAll(new RegExp(RivalRegex.specialChars), '')
+              .replaceAll('\n', ' ')
+              .toLowerCase()
+              .split(' ')) {
+              if (RegExp(RivalRegex.username).hasMatch(username)) mentions.add(username.replaceAll('@', ''));
+            }
 
-        LocationData location = await getLocation();
+            LocationData location = await getLocation();
 
-        if (location == null) {
-          _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text('Location Permission Denied'),));
-          return;
-        }
+            if (location == null) {
+              _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text('Location Permission Denied'),));
+              return;
+            }
 
-        Post postAfter = await post(
-          allowComments: allowComments,
-          btnTitle: productButtonTitle,
-          containsAdultContent: containsAdultContent,
-          description: _descriptionCtrl.text,
-          geoPoint: geoPoint,
-          items: items,
-          labels: labels,
-          location: locationText,
-          ocr: ocrText,
-          people: people,
-          showLikeCount: showLikeCount,
-          beta: betaPost,
-          size: Size(ratio['width'], ratio['height']),
-          sponsor: sponsor,
-          subtitle: _subtitleCtrl.text,
-          keywords: keywords,
-          topic: topic,
-          mentions: mentions,
-          userLocation: location
+            PostCreationTool tool = PostCreationTool(
+              allowComments: allowComments,
+              btnTitle: productButtonTitle,
+              containsAdultContent: containsAdultContent,
+              description: _descriptionCtrl.text,
+              geoPoint: geoPoint,
+              items: items,
+              labels: labels,
+              location: locationText,
+              ocr: ocrText,
+              people: people,
+              showLikeCount: showLikeCount,
+              beta: betaPost,
+              isProduct: isProduct,
+              productUrl: productUrl,
+              tags: tags,
+              size: Size(ratio['width'], ratio['height']),
+              sponsor: sponsor,
+              subtitle: _subtitleCtrl.text,
+              keywords: keywords,
+              topic: topic,
+              mentions: mentions,
+              userLocation: location,
+              afterCreation: (Post createdPost) async {
+                if (topic != null) await firestore.collection('rival').doc('topics').update({
+                  topic: FieldValue.arrayUnion([createdPost.id])
+                });
+                // Add all tags to this week's top list
+                // DocumentSnapshot topTagsDoc = await firestore.collection('rival').doc('tags').get();
+                // Map topTagsMap = topTagsDoc.data()[RivalProvider.weekOfYear.toString()] ?? {};
+
+                // for (String tag in tags) {
+                //   if (topTagsMap.containsKey(tag)) {
+                //     await topTagsDoc.reference.update({'${RivalProvider.weekOfYear}.$tag': FieldValue.increment(1)});
+                //   } else {
+                //     await topTagsDoc.reference.update({'${RivalProvider.weekOfYear}.$tag': 1});
+                //   }
+                // }
+
+                // Add this post to our homescreen
+                feed.insert(0, createdPost);
+
+                // Add this post to my posts in profile page if it is loaded
+                if (myPosts != null) myPosts.insert(0, createdPost);
+
+                await me.reload();
+
+                RivalProvider.vibrate();
+
+                RivalProvider.showToast(text: 'Post Created');
+                isLoading = false;
+
+                try {
+                  setState(() {});
+                } catch (e) {}
+              }
+            );
+
+            helper.create(tool: tool);
+          },
+          onComplete: () {}
         );
 
-        if (topic != null) await firestore.collection('rival').doc('topics').update({
-          topic: FieldValue.arrayUnion([postAfter.id])
-        });
-
-        // Add all tags to this week's top list
-        // DocumentSnapshot topTagsDoc = await firestore.collection('rival').doc('tags').get();
-        // Map topTagsMap = topTagsDoc.data()[RivalProvider.weekOfYear.toString()] ?? {};
-
-        // for (String tag in tags) {
-        //   if (topTagsMap.containsKey(tag)) {
-        //     await topTagsDoc.reference.update({'${RivalProvider.weekOfYear}.$tag': FieldValue.increment(1)});
-        //   } else {
-        //     await topTagsDoc.reference.update({'${RivalProvider.weekOfYear}.$tag': 1});
-        //   }
-        // }
-
-        // Add this post to our homescreen
-        List<Post> timelineL = feed.reversed.toList();
-        timelineL.add(postAfter);
-        feed = timelineL.reversed.toList();
-
-        // Add this post to my posts in profile page if it is loaded
-        if (myPosts != null) {
-          List<Post> myPostsL = myPosts.reversed.toList();
-          myPostsL.add(postAfter);
-          myPosts = myPostsL.reversed.toList();
-        }
-
-        await me.reload();
-
-        RivalProvider.vibrate();
-
-        RivalProvider.showToast(text: 'Post Created');
-        isPostBeingCreated = false;
-        isLoading = false;
-
-        if (this.mounted) {
-          // `mounted` is used to check if user has pressed back button while the post is being uploaded.
-          setState(() { });
-          Navigator.pushAndRemoveUntil(context, RivalNavigator(page: Home()), (route) => false);
-        }
+        Navigator.of(context).pop();
       }
     } else if (me.uid != "EQs5vlC8U1XWqJxdR3dHPgUrx413" && !RivalRemoteConfig.allowNewPost) { // @Rival user id: `EQs5vlC8U1XWqJxdR3dHPgUrx413`
       showDialog(
         context: context,
-        child: AlertDialog(
+        builder: (context) => AlertDialog(
           title: Text('New Post Disabled'),
           content: Text('Sorry for inconvenience, but we have disabled new posts for a limited time. Please try again later.'),
           actions: [
-            FlatButton(
+            TextButton(
               onPressed: () {
                 Navigator.of(context).maybePop();
                 Navigator.of(context).pushAndRemoveUntil(
@@ -1223,27 +1144,6 @@ class _CreatePostState extends State<CreatePost> {
           ],
         )
       );
-    } else if (isPostBeingCreated) {
-      showDialog(
-        context: context,
-        child: AlertDialog(
-          title: Text('Alert'),
-          content: Text('A post is already being created. Please wait for it finish'),
-          actions: [
-            FlatButton(
-              onPressed: () {
-                Navigator.of(context).maybePop();
-                Navigator.of(context).pushAndRemoveUntil(
-                    RivalNavigator(
-                      page: Home(),
-                    ),
-                    (route) => false);
-              },
-              child: Text('Ok')
-            )
-          ],
-        )
-      );
     }
 
     if (this.mounted)
@@ -1253,146 +1153,14 @@ class _CreatePostState extends State<CreatePost> {
         loadingState = null;
       });
   }
-
-  Future<Post> post({
-    @required List<Map> items,
-    @required String description,
-    @required String subtitle,
-    @required GeoPoint geoPoint,
-    @required String location,
-    @required bool allowComments,
-    @required bool containsAdultContent,
-    @required Size size,
-    @required List labels,
-    @required bool showLikeCount,
-    @required bool beta,
-    @required List<DocumentReference> people,
-    @required List<String> ocr,
-    @required String btnTitle,
-    @required RivalUser sponsor,
-    @required List<String> keywords,
-    @required String topic,
-    @required List<String> mentions,
-    @required LocationData userLocation
-  }) async {
-    Post post;
-
-    String postId = await getPostUid(); // Get a new id for post
-    DocumentReference ref = firestore
-      .collection('posts')
-      .doc(postId); // Create a reference to that post location
-
-    List<Map> finalItems = [];
-    //List blurHashes = [];
-
-    for (Map map in items) {
-      if (map['type'] == 'image') {
-        File image = map['file'];
-        var time = DateTime.now().toString();
-        // Makes the app slower
-        // Uint8List filePixels = file.readAsBytesSync();
-        // var blurhash = await BlurHash.encode(filePixels, 9, 9);
-        // print(blurhash);
-        // blurHashes.add(blurhash);
-        String imageUrl = await (await FirebaseStorage.instance
-          .ref()
-          .child('posts')
-          .child("IMG-$postId-${time.replaceAll(new RegExp(r"\s+"), "")}")
-          .putFile(image)
-          .onComplete)
-          .ref
-          .getDownloadURL();
-        finalItems.add({
-          'type': 'image',
-          'url': imageUrl
-        });
-        setState(() {
-          loadingState = loadingState + ".";
-        });
-      } else { // Type of POLL
-        finalItems.add(map);
-      }
-    }
-
-    setState(() {
-      loadingState = 'Finishing up...';
-    });
-
-    int timestamp = DateTime.now().toUtc().millisecondsSinceEpoch;
-
-    String shareableUrl = (await createDynamicURL(
-      link: 'https://rival.photography/post/$postId',
-      title: '@${me.username} | Rival | Post',
-      description: '${_descriptionCtrl.text}\nA Post by @${me.username}'
-    )) ?? 'Post ID: $postId';
-
-    await ref.set({
-      'id': postId,
-      'ratio': size.aspectRatio,
-      'size': {'width': size.width, 'height': size.height},
-      'items': finalItems,
-      'labels': labels,
-      'ocr': ocr,
-      'people': people,
-      //'blurhashes': blurHashes,
-      'subtitle': subtitle,
-      'description': description,
-      'timestamp': timestamp,
-      'keywords': keywords,
-      'tags': tags,
-      'mentions': mentions,
-      'showLikeCount': showLikeCount,
-      'likes': {},
-      'allowComments': allowComments,
-      'adult-rated': containsAdultContent,
-      'comments': {},
-      'edited': null,
-      'reach': {},
-      'shares': {},
-      'impressions': {},
-      'profile_visits': {},
-      'creator': me.uid,
-      'user': me.reference,
-      'promoted': false,
-      'sponsor': sponsor?.reference,
-      'isProduct': isProduct,
-      'productUrl': productUrl,
-      'productTitle': btnTitle,
-      'geoPoint': geoPoint,
-      'locationPlaceholder': location,
-      'available': true,
-      'takenDown': false,
-      'beta': beta,
-      'shareableUrl': shareableUrl,
-      'topic': topic,
-      'details': {
-        'timestamp': timestamp,
-        'token': me.token,
-        'location': GeoPoint(userLocation.latitude, userLocation.longitude),
-      }
-    });
-
-    await me.update({
-      'posts': FieldValue.arrayUnion([ref])
-    });
-
-    await database.reference().child(me.uid).child('feed').update({
-      post.id: post.timestamp
-    });
-
-    post = await getPost(ref.id);
-
-    return post;
-  }
 }
 
 Future<String> getPostUid() async {
   String uid = generatePostUid();
-  if ((await firestore.collection('post').doc(uid).get()).exists) {
-    return generatePostUid();
-  } else {
-    return uid;
+  while ((await firestore.collection('post').doc(uid).get()).exists) {
+    uid = generatePostUid();
   }
+  return uid;
 }
 
 String generatePostUid() {

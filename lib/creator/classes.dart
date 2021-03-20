@@ -310,7 +310,7 @@ class CreatorPageProperties extends CreatorWidget {
         onTap: (context) {
           showDialog(
             context: context,
-            child: Dialog(
+            builder: (context) => Dialog(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -427,7 +427,7 @@ class Background extends CreatorWidget {
                   ),
                 ),
                 actions: [
-                  FlatButton(
+                  TextButton(
                     child: Text('Done'),
                     onPressed: () => Navigator.of(context).pop()
                   )
@@ -595,7 +595,7 @@ class CreatorText extends CreatorWidget {
                   ),
                 ),
                 actions: [
-                  FlatButton(
+                  TextButton(
                       child: Text('Done'),
                       onPressed: () => Navigator.of(context).pop())
                 ],
@@ -636,7 +636,7 @@ class CreatorText extends CreatorWidget {
                   ),
                 ),
                 actions: [
-                  FlatButton(
+                  TextButton(
                       child: Text('Done'),
                       onPressed: () => Navigator.of(context).pop())
                 ],
@@ -1371,7 +1371,6 @@ class _ResizeableWidgetState extends State<ResizeableWidget> {
         // )
       ),
       child: Stack(
-        overflow: Overflow.visible,
         clipBehavior: Clip.none,
         children: [
           GestureDetector(

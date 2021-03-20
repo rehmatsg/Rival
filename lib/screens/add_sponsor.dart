@@ -28,7 +28,7 @@ class _AddSponsorState extends State<AddSponsor> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Center(
-            child: CircularProgressIndicator(),
+            child: CustomProgressIndicator(),
           )
         ],
       )
@@ -112,17 +112,19 @@ class _PartnerWidgetState extends State<PartnerWidget> {
           padding: const EdgeInsets.symmetric(horizontal: 15),
           child: Row(
             children: [
-              if (user.isBusinessAccount || me.partners.containsKey(user.uid)) FlatButton(
+              if (user.isBusinessAccount || me.partners.containsKey(user.uid)) TextButton(
                 child: isBtnLoading ? Container(
                   height: 14,
                   width: 14,
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation(Colors.white),
+                  child: CustomProgressIndicator(
+                    valueColor: Colors.white,
                     strokeWidth: 2,
                   )
                 ) : Text(_getPartnerBtnText(user), style: TextStyle(color: Colors.white),),
                 onPressed: isBtnLoading ? null : () => _partnerBtnTap(user),
-                color: Colors.indigoAccent
+                style: TextButton.styleFrom(
+                  backgroundColor: Colors.indigoAccent
+                ),
               ) else ... [
                 Icon(Icons.warning, color: Colors.yellow, size: 15,),
                 Container(width: 5),

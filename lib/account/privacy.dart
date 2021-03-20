@@ -37,44 +37,36 @@ class _PrivacyPageState extends State<PrivacyPage> {
         child: Column(
           children: [
             ListTile(
-              title: const Text('Account Privacy'),
-              subtitle: me.doc.data()['private'] == true ? const Text('Private') : const Text('Public'),
-              onTap: () => showDialog(
-                context: context,
-                child: AlertDialog(
-                  title: Text('Account Privacy'),
-                  content: Text('Making an account private hides your posts from people who don\'t follow you'),
-                  actions: [
-                    FlatButton(
-                      onPressed: () async {
-                        await firestore.collection('users').doc(me.uid).update({
-                          'private': false
-                        });
-                        setState(() { });
-                        Navigator.of(context).maybePop();
-                        Navigator.pushAndRemoveUntil(context, RivalNavigator(page: Home(),), (route) => false);
-                        await RivalProvider.showToast(
-                          text: 'Switched to Public Account',
-                        );
-                      },
-                      child: Text('Public')
-                    ),
-                    FlatButton(
-                      onPressed: () async {
-                        await firestore.collection('users').doc(me.uid).update({
-                          'private': true
-                        });
-                        setState(() { });
-                        Navigator.of(context).maybePop();
-                        Navigator.pushAndRemoveUntil(context, RivalNavigator(page: Home(),), (route) => false);
-                        await RivalProvider.showToast(
-                          text: 'Switched to Private Account'
-                        );
-                      },
-                      child: Text('Private')
-                    )
-                  ],
-                )
+              title: Text('Private Account'),
+              trailing: Switch.adaptive(
+                onChanged: (bool value) => showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: Text('Switch to ${me.private ? 'public' : 'private'} account'),
+                    content: Text('Are you sure you want to switch to ${me.private ? 'public' : 'private'} account?'),
+                    actions: [
+                      TextButton(
+                        onPressed: Navigator.of(context).pop,
+                        child: Text('Cancel')
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          await me.update({
+                            'private': value
+                          }, reload: true);
+                          setState(() { });
+                          Navigator.of(context).maybePop();
+                          Navigator.pushAndRemoveUntil(context, RivalNavigator(page: Home(),), (route) => false);
+                          await RivalProvider.showToast(
+                            text: 'Switched to ${me.private ? 'public' : 'private'} Account'
+                          );
+                        },
+                        child: Text('Switch')
+                      )
+                    ],
+                  )
+                ),
+                value: me.private,
               ),
             ),
             ListTile(
@@ -102,10 +94,10 @@ class _PrivacyPageState extends State<PrivacyPage> {
               title: const Text('New followers'),
               subtitle: Text('Manually approve new followers'),
               trailing: Switch.adaptive(
-                value: me.doc.data()['allow_new_followers'],
+                value: !me.doc.data()['allow_new_followers'],
                 onChanged: (value) async {
                   await me.update({
-                    'allow_new_followers': value
+                    'allow_new_followers': !value
                   }, reload: true);
                   setState(() {});
                   RivalProvider.showToast(
@@ -134,7 +126,7 @@ class _PrivacyPageState extends State<PrivacyPage> {
             //       title: const Text('Analyics'),
             //       content: const Text('Enabling analytics will help us make a better user experience for you. The data is stored internally and not linked to your account. Analytics are enabled by default.'),
             //       actions: [
-            //         FlatButton(
+            //         TextButton(
             //           onPressed: () async {
             //             Navigator.of(context).pop();
             //             await analytics.setAnalyticsCollectionEnabled(false);
@@ -144,7 +136,7 @@ class _PrivacyPageState extends State<PrivacyPage> {
             //           },
             //           child: const Text('Disable')
             //         ),
-            //         FlatButton(
+            //         TextButton(
             //           onPressed: () async {
             //             Navigator.of(context).pop();
             //             await analytics.setAnalyticsCollectionEnabled(true);
@@ -167,13 +159,13 @@ class _PrivacyPageState extends State<PrivacyPage> {
             //       title: const Text('Clear Analytics Data'),
             //       content: const Text('Do you want to clear all data collected from your device?'),
             //       actions: [
-            //         FlatButton(
+            //         TextButton(
             //           onPressed: () {
             //             Navigator.of(context).pop();
             //           },
             //           child: const Text('Cancel')
             //         ),
-            //         FlatButton(
+            //         TextButton(
             //           onPressed: () async {
             //             Navigator.of(context).pop();
             //             await analytics.resetAnalyticsData();

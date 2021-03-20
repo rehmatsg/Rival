@@ -47,7 +47,10 @@ class _FollowersState extends State<Followers> {
                 label: Text(me.data['follow_requests'].length > 0 ? '${me.data['follow_requests'].length}' : 'No Requests', style: TextStyle(color: Colors.white),),
                 backgroundColor: Colors.indigoAccent,
               ),
-              onTap: () => Navigator.of(context).push(RivalNavigator(page: FollowRequests(),)),
+              onTap: () async {
+                await Navigator.of(context).push(RivalNavigator(page: FollowRequests(),));
+                setState(() {});
+              }
             ),
             PagedListView(
               autoNextPage: false,

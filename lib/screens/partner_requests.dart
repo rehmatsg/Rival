@@ -31,7 +31,7 @@ class _PartnerRequestsState extends State<PartnerRequests> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Center(
-            child: CircularProgressIndicator(),
+            child: CustomProgressIndicator(),
           )
         ],
       )
@@ -46,7 +46,7 @@ class _PartnerRequestsState extends State<PartnerRequests> {
               padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
               child: Row(
                 children: [
-                  FlatButton(
+                  TextButton(
                     child: Text('Add Partner', style: TextStyle(color: Colors.white),),
                     onPressed: () async {
                       Loader.show(
@@ -68,10 +68,12 @@ class _PartnerRequestsState extends State<PartnerRequests> {
                         }
                       );
                     },
-                    color: Colors.indigoAccent
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.indigoAccent
+                    ),
                   ),
                   Container(width: 10),
-                  FlatButton(
+                  TextButton(
                     child: Text('Remove', style: TextStyle(color: Colors.white),),
                     onPressed: () async {
                       Loader.show(
@@ -86,7 +88,9 @@ class _PartnerRequestsState extends State<PartnerRequests> {
                         }
                       );
                     },
-                    color: Colors.red[400]
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.red[400]
+                    ),
                   ),
                 ],
               ),

@@ -152,7 +152,7 @@ import '../app.dart';
 //             leadingIcon: Icons.warning,
 //             content: Text('This post has been taken down by Rival because it violates our policies'),
 //             actions: [
-//               FlatButton(
+//               TextButton(
 //                 child: Text('Privacy Policy'),
 //                 onPressed: () async => await launch('https://rival.photography/policy'),
 //               ),
@@ -163,7 +163,7 @@ import '../app.dart';
 //             leadingIcon: Icons.warning,
 //             content: Text('Oops, this post is not available. It may have been deleted. By the time you can discover top posts in Explore Page.'),
 //             actions: [
-//               FlatButton(
+//               TextButton(
 //                 child: Text('Learn More'),
 //                 onPressed: () async => await launch('https://rival.photography/help/post/unavailable'),
 //               ),
@@ -174,7 +174,7 @@ import '../app.dart';
 //             leadingIcon: Icons.error,
 //             content: Text('This Post is hidden because @${user.username} has a private account. Follow @${user.username} to view this post.'),
 //             actions: [
-//               FlatButton(
+//               TextButton(
 //                 child: Text('Learn More'),
 //                 onPressed: () async => await launch('https://rival.photography/help/post/unavailable'),
 //               ),
@@ -185,7 +185,7 @@ import '../app.dart';
 //             leadingIcon: Icons.error,
 //             content: Text('Oops, failed to load this post'),
 //             actions: [
-//               FlatButton(
+//               TextButton(
 //                 child: Text('Learn More'),
 //                 onPressed: () async => await launch('https://rival.photography/help/post/unavailable'),
 //               ),
@@ -196,7 +196,7 @@ import '../app.dart';
 //             leadingIcon: Icons.error,
 //             content: Text('This Post is hidden because you have blocked @${user.username}. Unblock @${user.username} to view this post.'),
 //             actions: [
-//               FlatButton(
+//               TextButton(
 //                 child: Text('Unblock'),
 //                 onPressed: () async {
 //                   await user.blockUnblock();
@@ -210,7 +210,7 @@ import '../app.dart';
 //             leadingIcon: Icons.warning,
 //             content: Text('This Post is rated 18+. Please add your DOB to check if you can view this post.'),
 //             actions: [
-//               FlatButton(
+//               TextButton(
 //                 child: Text('Learn More'),
 //                 onPressed: () async => await launch('https://rival.photography/help/post/adult-rated'),
 //               ),
@@ -221,7 +221,7 @@ import '../app.dart';
 //             leadingIcon: Icons.warning,
 //             content: Text('This Post is rated 18+. You cannot view this post.'),
 //             actions: [
-//               FlatButton(
+//               TextButton(
 //                 child: Text('Learn More'),
 //                 onPressed: () async => await launch('https://rival.photography/help/post/adult-rated'),
 //               ),
@@ -375,7 +375,7 @@ import '../app.dart';
 //                                   return Container(
 //                                     width: 50,
 //                                     height: 50,
-//                                     child: CircularProgressIndicator(
+//                                     child: CustomProgressIndicator(
 //                                       value: value,
 //                                       valueColor: new AlwaysStoppedAnimation<Color>(MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black : Colors.white),
 //                                       strokeWidth: 2,
@@ -507,7 +507,7 @@ import '../app.dart';
 //                                             title: Text('Edit Post Disabled'),
 //                                             content: Text('Post editing has been disabled for a limited time. Please try again later'),
 //                                             actions: [
-//                                               FlatButton(
+//                                               TextButton(
 //                                                 onPressed: () => Navigator.of(context).pop(),
 //                                                 child: Text('OK')
 //                                               )
@@ -537,14 +537,14 @@ import '../app.dart';
 //                                           title: Text('Report'),
 //                                           content: Text('Do you want to report this post?'),
 //                                           actions: [
-//                                             FlatButton(
+//                                             TextButton(
 //                                               onPressed: () async {
 //                                                 Navigator.of(context).pop();
 //                                                 await post.report();
 //                                               },
 //                                               child: Text('Report')
 //                                             ),
-//                                             FlatButton(
+//                                             TextButton(
 //                                               onPressed: () => Navigator.of(context).pop(),
 //                                               child: Text('Cancel')
 //                                             )
@@ -559,14 +559,14 @@ import '../app.dart';
 //                                           title: Text('Report Ad'),
 //                                           content: Text('Do you want to report this Ad?'),
 //                                           actions: [
-//                                             FlatButton(
+//                                             TextButton(
 //                                               onPressed: () async {
 //                                                 Navigator.of(context).pop();
 //                                                 await post.reportAd();
 //                                               },
 //                                               child: Text('Report')
 //                                             ),
-//                                             FlatButton(
+//                                             TextButton(
 //                                               onPressed: () => Navigator.of(context).pop(),
 //                                               child: Text('Cancel')
 //                                             )
@@ -673,7 +673,7 @@ import '../app.dart';
 //             leadingIcon: Icons.error,
 //             content: Text('Oops, could not load post.'),
 //             actions: [
-//               FlatButton(
+//               TextButton(
 //                 child: Text('Learn More'),
 //                 onPressed: () async => await launch('https://rival.photography/help/post/unavailable'),
 //               ),
@@ -764,7 +764,7 @@ import '../app.dart';
 //                         avatar: ClipOval(
 //                           child: OctoImage(
 //                             image: taggedUser.photo,
-//                             placeholderBuilder: (context) => CircularProgressIndicator(strokeWidth: 2,),
+//                             placeholderBuilder: (context) => CustomProgressIndicator(strokeWidth: 2,),
 //                           ),
 //                         ),
 //                       ),
@@ -955,7 +955,7 @@ class _PostUserState extends State<PostUser> {
             if (progress != null && progress.expectedTotalBytes != null) {
               value = progress.cumulativeBytesLoaded / progress.expectedTotalBytes;
             }
-            return CircularProgressIndicator(
+            return CustomProgressIndicator(
               value: value,
               strokeWidth: 2,
             );
@@ -997,10 +997,12 @@ class _PostUserState extends State<PostUser> {
 
   Widget getTrailingWidget() {
     if (post.isProduct && post.productUrl != null) {
-      return FlatButton(
-        color: Colors.indigoAccent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(10))
+      return TextButton(
+        style: TextButton.styleFrom(
+          backgroundColor: Colors.indigoAccent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(10))
+          ),
         ),
         child: Text(
           post.productTitle,
@@ -1079,7 +1081,7 @@ class _PostUserState extends State<PostUser> {
 //                   image: snapshot.data.photo,
 //                   width: 40,
 //                   height: 40,
-//                   placeholderBuilder: (context) => CircularProgressIndicator(),
+//                   placeholderBuilder: (context) => CustomProgressIndicator(),
 //                 ),
 //               )
 //               : Shimmer.fromColors(
@@ -1123,7 +1125,7 @@ class _PostUserState extends State<PostUser> {
 //                   Text(post.location)
 //                 ],
 //               ),
-//               trailing: (post.isProduct && interactive) ? FlatButton(
+//               trailing: (post.isProduct && interactive) ? TextButton(
 //                 color: Colors.indigoAccent,
 //                 shape: RoundedRectangleBorder(
 //                   borderRadius: BorderRadius.all(Radius.circular(10))
@@ -1170,7 +1172,7 @@ class _PostUserState extends State<PostUser> {
 //               Text(post.location)
 //             ],
 //           ),
-//           trailing: (post.isProduct && interactive) ? FlatButton(
+//           trailing: (post.isProduct && interactive) ? TextButton(
 //             color: Colors.indigoAccent,
 //             shape: RoundedRectangleBorder(
 //               borderRadius: BorderRadius.all(Radius.circular(10))
@@ -1378,7 +1380,7 @@ class _ViewPostState extends State<ViewPost> {
         leadingIcon: Icons.error,
         content: Text('Post Unavailable'),
         actions: [
-          FlatButton(
+          TextButton(
             child: Text('Learn More'),
             onPressed: () async {
               await launch('https://rival.photography/post/unavailable');
@@ -1391,7 +1393,7 @@ class _ViewPostState extends State<ViewPost> {
         leadingIcon: Icons.error,
         content: Text('Failed to load this post. ERR-LD-USR'),
         actions: [
-          FlatButton(
+          TextButton(
             child: Text('Learn More'),
             onPressed: () async {
               await launch('https://rival.photography/post/err-ld-usr');
@@ -1404,7 +1406,7 @@ class _ViewPostState extends State<ViewPost> {
         leadingIcon: Icons.warning,
         content: Text('This post has been taken down by Rival because it does not comply by our policies'),
         actions: [
-          FlatButton(
+          TextButton(
             child: Text('Privacy Policy'),
             onPressed: () async {
               await launch('https://rival.photography/privacy-policy');
@@ -1417,7 +1419,7 @@ class _ViewPostState extends State<ViewPost> {
         leadingIcon: Icons.warning,
         content: Text('You cannot view this post because @${post.user.username} has a private account. Follow @${post.user.username} to view this post'),
         actions: [
-          FlatButton(
+          TextButton(
             child: Text(post.user.followUnfollow),
             onPressed: () async {
               await post.user.followUnfollowRequest();
@@ -1431,7 +1433,7 @@ class _ViewPostState extends State<ViewPost> {
         leadingIcon: Icons.warning,
         content: Text('You cannot view this post'),
         actions: [
-          FlatButton(
+          TextButton(
             child: Text('Learn More'),
             onPressed: () async {
               await launch('https://rival.photography/post/unavailable');
@@ -1444,7 +1446,7 @@ class _ViewPostState extends State<ViewPost> {
         leadingIcon: Icons.warning,
         content: Text('This post is hidden because you have blocked @${post.user.username}. Unblock to view their posts'),
         actions: [
-          FlatButton(
+          TextButton(
             child: Text('Unblock'),
             onPressed: () async {
               await post.user.blockUnblock();
@@ -1457,7 +1459,7 @@ class _ViewPostState extends State<ViewPost> {
         leadingIcon: Icons.warning,
         content: Text('This post is age restricted'),
         actions: [
-          FlatButton(
+          TextButton(
             child: Text('Privacy Policy'),
             onPressed: () async {
               await launch('https://rival.photography/post/age-restricted');
@@ -1470,7 +1472,7 @@ class _ViewPostState extends State<ViewPost> {
         leadingIcon: Icons.error,
         content: Text('This post was created on a newer version of Rival'),
         actions: [
-          FlatButton(
+          TextButton(
             child: Text('Learn More'),
             onPressed: () async {
               await launch('https://rival.photography/post/beta');
@@ -1557,9 +1559,9 @@ class _ViewPostState extends State<ViewPost> {
                                     return Container(
                                       width: 50,
                                       height: 50,
-                                      child: CircularProgressIndicator(
+                                      child: CustomProgressIndicator(
                                         value: value,
-                                        valueColor: new AlwaysStoppedAnimation<Color>(MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black : Colors.white),
+                                        valueColor: MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.black : Colors.white,
                                         strokeWidth: 2,
                                       ),
                                     );
@@ -1759,10 +1761,12 @@ class _ViewPostState extends State<ViewPost> {
                           )
                         ],
                       ),
-                      if (post.isProduct && post.productUrl != null) FlatButton(
-                        color: Colors.indigoAccent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(10))
+                      if (post.isProduct && post.productUrl != null) TextButton(
+                        style: TextButton.styleFrom(
+                          backgroundColor: Colors.indigoAccent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(10))
+                          ),
                         ),
                         child: Text(
                           post.productTitle,
@@ -1883,11 +1887,11 @@ class _ViewPostState extends State<ViewPost> {
                                     } else {
                                       showDialog(
                                         context: context,
-                                        child: AlertDialog(
+                                        builder: (context) => AlertDialog(
                                           title: Text('Edit Post Disabled'),
                                           content: Text('Post editing has been disabled for a limited time. Please try again later'),
                                           actions: [
-                                            FlatButton(
+                                            TextButton(
                                               onPressed: () => Navigator.of(context).pop(),
                                               child: Text('OK')
                                             )
@@ -1911,11 +1915,11 @@ class _ViewPostState extends State<ViewPost> {
                                     if (post.items.indexWhere((item) => item.type == PostType.image) < 0) {
                                       showDialog(
                                         context: context,
-                                        child: AlertDialog(
+                                        builder: (context) => AlertDialog(
                                           title: Text('Unavailable'),
                                           content: Text('Posts with only polls cannot be added to story.'),
                                           actions: [
-                                            FlatButton(
+                                            TextButton(
                                               child: Text('Ok'),
                                               onPressed: () => Navigator.of(context).pop()
                                             )
@@ -1929,18 +1933,18 @@ class _ViewPostState extends State<ViewPost> {
                                   case 'report':
                                     showDialog(
                                       context: context,
-                                      child: AlertDialog(
+                                      builder: (context) => AlertDialog(
                                         title: Text('Report'),
                                         content: Text('Do you want to report this post?'),
                                         actions: [
-                                          FlatButton(
+                                          TextButton(
                                             onPressed: () async {
                                               Navigator.of(context).pop();
                                               await post.report();
                                             },
                                             child: Text('Report')
                                           ),
-                                          FlatButton(
+                                          TextButton(
                                             onPressed: () => Navigator.of(context).pop(),
                                             child: Text('Cancel')
                                           )
@@ -1951,18 +1955,18 @@ class _ViewPostState extends State<ViewPost> {
                                   case 'reportAd':
                                     showDialog(
                                       context: context,
-                                      child: AlertDialog(
+                                      builder: (context) => AlertDialog(
                                         title: Text('Report Ad'),
                                         content: Text('Do you want to report this Ad?'),
                                         actions: [
-                                          FlatButton(
+                                          TextButton(
                                             onPressed: () async {
                                               Navigator.of(context).pop();
                                               await post.reportAd();
                                             },
                                             child: Text('Report')
                                           ),
-                                          FlatButton(
+                                          TextButton(
                                             onPressed: () => Navigator.of(context).pop(),
                                             child: Text('Cancel')
                                           )
@@ -1976,11 +1980,11 @@ class _ViewPostState extends State<ViewPost> {
                                   case 'whyThisPost':
                                     showDialog(
                                       context: context,
-                                      child: AlertDialog(
+                                      builder: (context) => AlertDialog(
                                         title: Text('Why this post?'),
                                         content: Text(widget.whyThisPost),
                                         actions: [
-                                          FlatButton(
+                                          TextButton(
                                             onPressed: () => Navigator.of(context).pop(),
                                             child: Text('Ok')
                                           )
@@ -2108,7 +2112,7 @@ class _SinglePostViewState extends State<SinglePostView> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Center(
-            child: CircularProgressIndicator(),
+            child: CustomProgressIndicator(),
           )
         ],
       )
@@ -2156,7 +2160,7 @@ class _PostsByTopicState extends State<PostsByTopic> {
               itemsPerPage: postsPerPage,
               loadingWidget: Padding(
                 padding: EdgeInsets.symmetric(vertical: 20),
-                child: CircularProgressIndicator(),
+                child: CustomProgressIndicator(),
               ),
               onFinish: 'That\'s it',
               onNextPage: _getNextPage,

@@ -87,7 +87,6 @@ class _EmailPageState extends State<EmailPage> {
           text: 'Email verified',
         );
         setState(() {});
-        Navigator.pushAndRemoveUntil(context, RivalNavigator(page: Home(),), (route) => false);
       }
     } else {
       await RivalProvider.showToast(

@@ -30,7 +30,6 @@ export 'screens/creator.dart';
 export 'screens/explore.dart';
 export 'screens/followers.dart';
 export 'screens/following.dart';
-export 'screens/image_editor.dart';
 export 'screens/insights.dart';
 export 'screens/my_commented_posts.dart';
 export 'screens/my_liked_posts.dart';

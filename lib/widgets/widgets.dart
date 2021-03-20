@@ -159,6 +159,41 @@ class TextParser extends StatelessWidget {
 
 }
 
+class CustomProgressIndicator extends StatefulWidget {
+
+  final Color valueColor;
+  final Color backgroundColor;
+  final double strokeWidth;
+  final double value;
+
+  /// Set CPI color to black or white according to theme
+  /// Black for light theme
+  /// And White for dark theme
+  final bool blackAndWhite;
+
+  CustomProgressIndicator({Key key, this.valueColor, this.backgroundColor, this.strokeWidth = 4.0, this.value, this.blackAndWhite = true}) : super(key: key);
+
+  @override
+  _CustomProgressIndicatorState createState() => _CustomProgressIndicatorState();
+}
+
+class _CustomProgressIndicatorState extends State<CustomProgressIndicator> {
+  @override
+  Widget build(BuildContext context) {
+    Color color;
+    if (widget.blackAndWhite == true) {
+      if (MediaQuery.of(context).platformBrightness == Brightness.light) color = Colors.black;
+      else color = Colors.white;
+    } else color = widget.valueColor ?? Colors.indigoAccent;
+    return CircularProgressIndicator(
+      backgroundColor: widget.backgroundColor,
+      strokeWidth: widget.strokeWidth,
+      value: widget.value,
+      valueColor: AlwaysStoppedAnimation(color),
+    );
+  }
+}
+
 class RivalNavigator<T> extends PageRouteBuilder<T> {
   final Widget page;
   final SharedAxisTransitionType transitionType;
@@ -255,7 +290,9 @@ class Loader {
           width: double.infinity,
           color: Colors.black38,
           child: Center(
-            child: CircularProgressIndicator(),
+            child: CustomProgressIndicator(
+              valueColor: Colors.white,
+            ),
           ),
         ),
       ),
@@ -335,7 +372,7 @@ class _PagedListViewState extends State<PagedListView> {
   Widget build(BuildContext context) {
     if (isLoading) {
       if (widget.loadingWidget == null) return Center(
-        child: CircularProgressIndicator(),
+        child: CustomProgressIndicator(),
       );
       return widget.loadingWidget;
     } else return SingleChildScrollView(
@@ -355,7 +392,7 @@ class _PagedListViewState extends State<PagedListView> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                if (isNextPageLoading) CircularProgressIndicator(
+                if (isNextPageLoading) CustomProgressIndicator(
                   strokeWidth: 2,
                 ) else if (!moreDataAvailable) Text(
                   widget.onFinish,

@@ -183,7 +183,7 @@ class _CreatePollState extends State<CreatePoll> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                OutlineButton(
+                OutlinedButton(
                   child: Text('Add Option'),
                   onPressed: poll['options'].length < 5 ? () {
                     int noOfOptions = poll['options'].length;

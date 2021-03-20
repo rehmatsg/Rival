@@ -8,6 +8,8 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import '../utils.dart';
 import '../controller/story_controller.dart';
 
+import '../../../app.dart';
+
 /// Utitlity to load image (gif, png, jpg, etc) media just once. Resource is
 /// cached to disk with default configurations of [DefaultCacheManager].
 class ImageLoader {
@@ -199,8 +201,8 @@ class StoryImageState extends State<StoryImage> {
           child: Container(
             width: 70,
             height: 70,
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            child: CustomProgressIndicator(
+              valueColor: Colors.white,
               strokeWidth: 3,
             ),
           ),

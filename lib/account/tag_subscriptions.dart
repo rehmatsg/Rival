@@ -52,8 +52,10 @@ class _SubscribedTagBtnState extends State<SubscribedTagBtn> {
 
   @override
   Widget build(BuildContext context) {
-    return FlatButton(
-      color: isBtnLoading ? (MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.grey[300] : Colors.white10) : Colors.indigoAccent,
+    return TextButton(
+      style: TextButton.styleFrom(
+        backgroundColor: isBtnLoading ? (MediaQuery.of(context).platformBrightness == Brightness.light ? Colors.grey[300] : Colors.white10) : Colors.indigoAccent,
+      ),
       onPressed: isBtnLoading
       ? null
       : () async {
@@ -81,7 +83,7 @@ class _SubscribedTagBtnState extends State<SubscribedTagBtn> {
       ? Container(
         width: 14,
         height: 14,
-        child: CircularProgressIndicator(
+        child: CustomProgressIndicator(
           strokeWidth: 2,
         ),
       )
